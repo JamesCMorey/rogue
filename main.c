@@ -1,6 +1,7 @@
 #include <ncursesw/ncurses.h>
 
 void new_box(int y, int x, int height, int width);
+void draw_rect(int y, int x, int height, int width);
 
 typedef struct Player {
 	int y, x;
@@ -12,6 +13,7 @@ typedef struct Room {
 } Room;
 
 
+static int maxy, maxx;
 
 int main() {
 	initscr(); /* Init curses */
@@ -20,7 +22,6 @@ int main() {
 	keypad(stdscr, TRUE); /* Enable F1, F2, arrow keys, etc. */
 	curs_set(0); /* Hide cursor */
 
-	int maxy, maxx;
 	getmaxyx(stdscr, maxy, maxx);
 
 	Player p = {0, 0};
@@ -34,7 +35,10 @@ int main() {
 	while (running) {
 		erase();
 
-		new_box(camy(10), camx(10), 5, 10);
+		for (int i = 0; i < 4; ++i) {
+			draw_rect(camy(10) * i, camx(10), 5, 10);
+			draw_rect(camy(10 * i), camx(-20), 5, 10);
+		}
 		mvaddch(maxy/2, maxx/2, '@');
 		mvprintw(0, maxx - 10, "max y: %d", maxy);
 		mvprintw(1, maxx - 10, "max x: %d", maxx);
@@ -57,20 +61,47 @@ int main() {
 	return 0;
 }
 
-void new_box(int y, int x, int height, int width) {
-	move(y, x);
-	hline(0, width);
-	vline(0, height);
-	addch(ACS_ULCORNER);
+void draw_rect(int y, int x, int height, int width) {
+	/* Rect extents */
+	int x0 = x;
+	int y0 = y;
+	int x1 = x + width;
+	int y1 = y + height;
 
-	move(y + height, x);
-	hline(0, width);
-	addch(ACS_LLCORNER);
+	/* Clamp coords to screen */
+	int draw_x0 = x0 < 0 ? 0 : x0;
+	int draw_y0 = y0 < 0 ? 0 : y0;
+	int draw_x1 = x1 > maxx ? maxx : x1;
+	int draw_y1 = y1 > maxy ? maxy : y1;
 
-	move(y, x + width);
-	vline(0, height);
-	addch(ACS_URCORNER);
+	/* Offscreen--draw nothing */
+	if (draw_y0 >= draw_y1 || draw_x0 >= draw_x1) {
+		return;
+	}
 
-	move(y + height, x + width);
-	addch(ACS_LRCORNER);
+	/* Horizontal Edges */
+	if (0 <= y0 && y0 < maxy) {
+		move(y0, draw_x0);
+		hline(0, draw_x1 - draw_x0);
+	}
+	if (0 <= y1 && y1 < maxy) {
+		move(y1, draw_x0);
+		hline(0, draw_x1 - draw_x0);
+	}
+
+	/* Vertical Edges */
+	if (0 <= x0 && x0 < maxx ) {
+		move(draw_y0, x0);
+		vline(0, draw_y1 - draw_y0);
+	}
+	if (0 <= x1 && x1 < maxx ) {
+		move(draw_y0, x1);
+		vline(0, draw_y1 - draw_y0);
+	}
+
+	/* Draw Corners */
+	if (0 <= y0 && 0 <= x0) { move(y0, x0); addch(ACS_ULCORNER); }
+	if (0 <= y0 && x1 < maxx) { move(y0, x1); addch(ACS_URCORNER); }
+	if (y1 < maxy && 0 <= x0) { move(y1, x0); addch(ACS_LLCORNER); }
+	if (y1 < maxy && x1 < maxx) { move(y1, x1); addch(ACS_LRCORNER); }
 }
