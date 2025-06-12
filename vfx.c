@@ -1,5 +1,8 @@
 #include "vfx.h"
+#include "world.h"
 #include <ncursesw/ncurses.h>
+
+int maxy, maxx;
 
 void vfx_init() {
 	initscr(); /* Init curses */
@@ -12,8 +15,25 @@ void vfx_init() {
 }
 
 void vfx_teardown() {
-
 	endwin(); /* Teardown curses */
+}
+
+void render_world() {
+		erase();
+
+		for (int r = 0; r < 3; ++r) {
+			for (int c = 0; c < 3; ++c)
+				draw_rect(camy(20 * r), camx(40 * c), 20, 40);
+		}
+
+		draw_rect(maxy/2, maxx/2, 1, 2);
+		// mvprintw(0, maxx - 10, "max y: %d", maxy);
+		// mvprintw(1, maxx - 10, "max x: %d", maxx);
+		refresh();
+}
+
+void render_menu() {
+
 }
 
 void draw_rect(int y, int x, int height, int width) {
