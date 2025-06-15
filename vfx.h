@@ -8,7 +8,6 @@
 void vfx_init();
 void vfx_teardown();
 
-void render_world();
 void draw_txtbox(char *txt, int y, int x, int height, int width);
 void draw_rect(int y, int x, int height, int width);
 void display_title();

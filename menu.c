@@ -1,6 +1,7 @@
 #include "menu.h"
 #include "vfx.h"
 #include "evloop.h"
+#include "world.h"
 #include <ncurses.h>
 #include <stdlib.h>
 
@@ -11,7 +12,7 @@ void main_menu_render(void *context) {
 	display_title();
 
 	char *things[] = {"Start", "Settings", "Exit"};
-	FrameSwitchFn fns[] = {NULL, NULL, NULL};
+	FrameSwitchFn fns[] = {enter_world, NULL, NULL};
 	for (int i = 0; i < 3; ++i) {
 		if (i == ctx->selected) {
 			attron(A_ITALIC | A_BOLD | A_UNDERLINE);
@@ -30,9 +31,9 @@ LogicFrameAction main_menu_logic(void *context) {
 	int ch = get_input();
 	switch(ch) {
 		case 'q': return LFRAME_EXIT; break;
-		case '\n':
+		case 'e':
 			if(ctx->menu_fns[ctx->selected] != NULL)
-				(void) ctx->menu_fns[ctx->selected];
+				(void) ctx->menu_fns[ctx->selected](NULL);
 			break;
 		case 'j':
 			if (ctx->selected < 2)

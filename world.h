@@ -30,3 +30,4 @@ extern WorldData world;
 
 void world_gen();
 void world_load();
+void enter_world(void *context);

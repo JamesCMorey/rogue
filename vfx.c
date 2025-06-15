@@ -87,19 +87,19 @@ void vfx_teardown() {
 	endwin(); /* Teardown curses */
 }
 
-void render_world() {
-		erase();
-
-		for (int r = 0; r < 3; ++r) {
-			for (int c = 0; c < 3; ++c)
-				draw_rect(camy(20 * r), camx(40 * c), 20, 40);
-		}
-
-		draw_rect(maxy/2, maxx/2, 1, 2);
-		// mvprintw(0, maxx - 10, "max y: %d", maxy);
-		// mvprintw(1, maxx - 10, "max x: %d", maxx);
-		refresh();
-}
+// void render_world() {
+// 		erase();
+//
+// 		for (int r = 0; r < 3; ++r) {
+// 			for (int c = 0; c < 3; ++c)
+// 				draw_rect(camy(20 * r), camx(40 * c), 20, 40);
+// 		}
+//
+// 		draw_rect(maxy/2, maxx/2, 1, 2);
+// 		// mvprintw(0, maxx - 10, "max y: %d", maxy);
+// 		// mvprintw(1, maxx - 10, "max x: %d", maxx);
+// 		refresh();
+// }
 
 void render_frame(LoopFrame *frame) {
 	erase();
