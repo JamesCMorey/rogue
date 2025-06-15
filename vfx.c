@@ -4,6 +4,7 @@
 #include <locale.h>
 #include <ncursesw/ncurses.h>
 #include <stdlib.h>
+#include <string.h>
 
 int maxy, maxx;
 
@@ -76,6 +77,7 @@ void vfx_init() {
 	curs_set(0); /* Hide cursor */
 	color_init();
 	res_init();
+	//attron(COLOR_PAIR(1));
 
 	getmaxyx(stdscr, maxy, maxx);
 }
@@ -153,4 +155,9 @@ void draw_rect(int y, int x, int height, int width) {
 	if (0 <= y0 && x1 < maxx) { move(y0, x1); addch(ACS_URCORNER); }
 	if (y1 < maxy && 0 <= x0) { move(y1, x0); addch(ACS_LLCORNER); }
 	if (y1 < maxy && x1 < maxx) { move(y1, x1); addch(ACS_LRCORNER); }
+}
+
+void draw_txtbox(char *txt, int y, int x, int height, int width) {
+	mvprintw(y + height/2, x + (width/2 - strlen(txt)/2), "%s", txt);
+	draw_rect(y, x, height, width);
 }

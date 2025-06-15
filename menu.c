@@ -1,13 +1,22 @@
 #include "menu.h"
 #include "vfx.h"
 #include "evloop.h"
+#include <ncurses.h>
 #include <stdlib.h>
 
 
 void main_menu_render(void *context) {
 	MenuData *ctx = context;
 	display_title();
-	draw_rect(12, maxx/2 - 26, 7, 50);
+	char *things[] = {"Start", "Settings", "Exit"};
+	for (int i = 0; i < 3; ++i) {
+		if (i == ctx->selected) {
+			attron(A_ITALIC | A_BOLD | A_UNDERLINE);
+			draw_txtbox(things[i], 12 + i*8, maxx/2 - 26, 7, 50);
+			attroff(A_ITALIC | A_BOLD | A_UNDERLINE);
+		} else
+			draw_txtbox(things[i], 12 + i*8, maxx/2 - 26, 7, 50);
+	}
 }
 
 LogicFrameAction main_menu_logic(void *context) {
