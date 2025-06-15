@@ -16,30 +16,36 @@ void render_world(void *context) {
 	draw_rect(maxy/2, maxx/2, 1, 2);
 }
 
+void move_player(int y, int x) {
+	Player *p = &world.player;
+	if (p->y + y < 20) p->y += y;
+	if (p->x + x < 20) p->x += x;
+}
+
 LogicFrameAction simulate_world(void *context) {
 	char ch = get_input();
 	switch(ch) {
 		case 'q': return LFRAME_EXIT; break;
 		case 'k':
-		case 'w': world.player.y -= 1; break;
+		case 'w': move_player(1, 0); break;
 		case 'h':
-		case 'a': world.player.x -= 1; break;
+		case 'a': move_player(0, -1); break;
 		case 'j':
-		case 's': world.player.y += 1; break;
+		case 's': move_player(-1, 0); break;
 		case 'l':
-		case 'd': world.player.x += 1; break;
+		case 'd': move_player(0, 1); break;
 
-		case 'y': world.player.y -= 1; world.player.x -= 1; break;
-		case 'u': world.player.y -= 1; world.player.x += 1; break;
-		case 'b': world.player.y += 1; world.player.x -= 1; break;
-		case 'n': world.player.y += 1; world.player.x += 1; break;
+		case 'y': move_player(-1, -1); break;
+		case 'u': move_player(-1, 1); break;
+		case 'b': move_player(1, -1); break;
+		case 'n': move_player(1, 1); break;
 		default: break;
 	}
 	return LFRAME_NOP;
 }
 
 void doom_world(void *context) {
-
+	return;
 }
 
 void enter_world(void *context) {

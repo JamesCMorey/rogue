@@ -5,7 +5,6 @@
 #include <ncurses.h>
 #include <stdlib.h>
 
-
 void main_menu_render(void *context) {
 	MenuData *ctx = context;
 
@@ -30,7 +29,6 @@ LogicFrameAction main_menu_logic(void *context) {
 
 	int ch = get_input();
 	switch(ch) {
-		case 'q': return LFRAME_EXIT; break;
 		case '\n':
 			if(ctx->menu_fns[ctx->selected] != NULL)
 				(void) ctx->menu_fns[ctx->selected](NULL);
@@ -52,7 +50,8 @@ LogicFrameAction main_menu_logic(void *context) {
 }
 
 void main_menu_exit(void *context) {
-	free(context);
+	if (context)
+		free(context);
 }
 
 void main_menu_create(void *context) {

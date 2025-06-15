@@ -14,8 +14,9 @@ void eventloop_run() {
 
 	while (frame != NULL) {
 		render_frame(frame);
-		//frame->render(frame->ctx);
+
 		if (frame->logic(frame->ctx) == LFRAME_EXIT) {
+			frame->exit(frame->ctx);
 			eventloop_pop();
 		}
 
@@ -37,4 +38,5 @@ void eventloop_enter(void *context,
 	evloop.stack_ptr->ctx = context;
 	evloop.stack_ptr->logic = logic;
 	evloop.stack_ptr->render = render;
+	evloop.stack_ptr->exit = exit;
 }
