@@ -31,9 +31,11 @@ LogicFrameAction main_menu_logic(void *context) {
 	int ch = get_input();
 	switch(ch) {
 		case 'q': return LFRAME_EXIT; break;
-		case 'e':
+		case '\n':
 			if(ctx->menu_fns[ctx->selected] != NULL)
 				(void) ctx->menu_fns[ctx->selected](NULL);
+			if (ctx->selected == 2)
+				return LFRAME_EXIT;
 			break;
 		case 'j':
 			if (ctx->selected < 2)

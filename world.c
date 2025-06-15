@@ -28,6 +28,11 @@ LogicFrameAction simulate_world(void *context) {
 		case 's': world.player.y += 1; break;
 		case 'l':
 		case 'd': world.player.x += 1; break;
+
+		case 'y': world.player.y -= 1; world.player.x -= 1; break;
+		case 'u': world.player.y -= 1; world.player.x += 1; break;
+		case 'b': world.player.y += 1; world.player.x -= 1; break;
+		case 'n': world.player.y += 1; world.player.x += 1; break;
 		default: break;
 	}
 	return LFRAME_NOP;
