@@ -9,8 +9,8 @@ setup:
 	meson setup build
 
 # Real files
-./build/rogue:build main.c
+./build/rogue:build *.c
 	meson compile -C build
 
 build:
-	meson setup build
+	meson setup build --buildtype debug

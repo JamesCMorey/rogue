@@ -1,0 +1,40 @@
+#include "evloop.h"
+#include "vfx.h"
+#include <stddef.h> // strictly here for NULL
+
+struct evloop evloop;
+
+void eventloop_pop() {
+	if (evloop.stack_ptr == evloop.stack) { evloop.stack_ptr = NULL; }
+	else { --evloop.stack_ptr; }
+}
+
+void eventloop_run() {
+	LoopFrame *frame = evloop.stack_ptr;
+
+	while (frame != NULL) {
+		render_frame(frame);
+		//frame->render(frame->ctx);
+		if (frame->logic(frame->ctx) == LFRAME_EXIT) {
+			eventloop_pop();
+		}
+
+		frame = evloop.stack_ptr; /* This doesn't seem like the actual way */
+	}
+}
+
+void eventloop_enter(void *context,
+										 RenderFrameFn render,
+										 LogicFrameFn logic,
+										 PostFrameFn exit)
+{
+	if (evloop.stack_ptr == NULL) {
+		evloop.stack_ptr = evloop.stack;
+	} else {
+		++evloop.stack_ptr;
+	}
+
+	evloop.stack_ptr->ctx = context;
+	evloop.stack_ptr->logic = logic;
+	evloop.stack_ptr->render = render;
+}
