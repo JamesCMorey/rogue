@@ -6,21 +6,6 @@
 
 WorldData world;
 
-// void handle_input(bool *running) {
-// 		char ch = get_input();
-// 		switch(ch) {
-// 			case 'q': *running = false; break;
-// 			case 'k':
-// 			case 'w': world.player.y -= 1; break;
-// 			case 'h':
-// 			case 'a': world.player.x -= 1; break;
-// 			case 'j':
-// 			case 's': world.player.y += 1; break;
-// 			case 'l':
-// 			case 'd': world.player.x += 1; break;
-// 			default: break;
-// 		}
-// }
 
 void render_world(void *context) {
 	for (int r = 0; r < 3; ++r) {
@@ -32,6 +17,19 @@ void render_world(void *context) {
 }
 
 LogicFrameAction simulate_world(void *context) {
+	char ch = get_input();
+	switch(ch) {
+		case 'q': return LFRAME_EXIT; break;
+		case 'k':
+		case 'w': world.player.y -= 1; break;
+		case 'h':
+		case 'a': world.player.x -= 1; break;
+		case 'j':
+		case 's': world.player.y += 1; break;
+		case 'l':
+		case 'd': world.player.x += 1; break;
+		default: break;
+	}
 	return LFRAME_NOP;
 }
 
