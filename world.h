@@ -21,6 +21,7 @@ typedef struct Player {
 
 /* Global state of world */
 typedef struct WorldData {
+	int room_num, hall_num;
 	Room rooms[100];
 	Hall halls[1000];
 	Player player;
