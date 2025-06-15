@@ -112,7 +112,7 @@ int get_input() {
 	return getch();
 }
 
-void draw_rect(int y, int x, int height, int width) {
+int draw_rect(int y, int x, int height, int width) {
 	/* Rect extents */
 	int x0 = x;
 	int y0 = y;
@@ -127,7 +127,7 @@ void draw_rect(int y, int x, int height, int width) {
 
 	/* Offscreen--draw nothing */
 	if (draw_y0 >= draw_y1 || draw_x0 >= draw_x1) {
-		return;
+		return 0;
 	}
 
 	/* Horizontal Edges */
@@ -155,6 +155,8 @@ void draw_rect(int y, int x, int height, int width) {
 	if (0 <= y0 && x1 < maxx) { move(y0, x1); addch(ACS_URCORNER); }
 	if (y1 < maxy && 0 <= x0) { move(y1, x0); addch(ACS_LLCORNER); }
 	if (y1 < maxy && x1 < maxx) { move(y1, x1); addch(ACS_LRCORNER); }
+
+	return 1;
 }
 
 void draw_txtbox(char *txt, int y, int x, int height, int width) {

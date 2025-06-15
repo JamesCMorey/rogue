@@ -9,7 +9,7 @@ void vfx_init();
 void vfx_teardown();
 
 void draw_txtbox(char *txt, int y, int x, int height, int width);
-void draw_rect(int y, int x, int height, int width);
+int draw_rect(int y, int x, int height, int width);
 void display_title();
 void render_frame(LoopFrame *frame);
 
