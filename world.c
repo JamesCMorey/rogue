@@ -10,17 +10,42 @@ void render_world(void *context) {
 	Room *r;
 	for (int i = 0; i < world.room_num; ++i) {
 		r = &world.rooms[i];
-		draw_rect(camy(r->world_y), camx(r->world_x), r->height, r->width);
+		r->onscreen = draw_rect(camy(r->world_y), camx(r->world_x), r->height, r->width);
 	}
 
 	draw_rect(maxy/2, maxx/2, 1, 2);
 	mvprintw(maxy - 1, 0, "y:%d, x:%d", world.player.y, world.player.x);
+	// int cnt = 0;
+	// for (int i = 0; i < world.room_num; ++i) {
+	// 	if (world.rooms[i].onscreen)
+	// 		++cnt;
+	// }
+	// mvprintw(maxy - 2, 0, "Checking %d rooms for collision", cnt);
 }
 
 void move_player(int y, int x) {
+	int up, down, right, left;
+	up = down = right = left = 1;
+
 	Player *p = &world.player;
-	if (p->y + y < 20) p->y += y;
-	if (p->x + x < 20) p->x += x;
+	Room *r;
+	for (int i = 0; i < world.room_num; ++i) {
+		r = &world.rooms[i];
+		/* Check if on screen and in room */
+		if (r->onscreen
+				&& (r->world_x < p->x && p->x < r->width + r->world_x)
+				&& (r->world_y < p->y && p->y < r->height + r->world_y)) {
+			/* Check if next to wall */
+			if (p->y + 1 == r->world_y + r->height - 1) down = 0;
+			if (p->y - 1 == r->world_y) up = 0;
+			if (p->x - 1 == r->world_x) left = 0;
+			if (p->x + 1 == r->world_x + r->width - 2) right = 0;
+		}
+	}
+
+	/* Move if allowed */
+	if ((y > 0 && down) || (y < 0 && up)) p->y += y;
+	if ((x > 0 && right) || (x < 0 && left)) p->x += x;
 }
 
 void handle_movement(char c) {
@@ -60,12 +85,14 @@ void world_gen() {
 	r->world_y = 12;
 	r->width = 20;
 	r->height = 10;
+	r->onscreen = 1;
 
 	r = &world.rooms[1];
 	r->world_x = -10;
 	r->world_y = -10;
 	r->width = 10;
 	r->height = 20;
+	r->onscreen = 1;
 }
 
 void enter_world(void *context) {

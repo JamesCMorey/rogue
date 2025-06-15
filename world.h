@@ -7,6 +7,7 @@
 typedef struct Room {
 	int world_x, world_y;
 	int width, height;
+	int onscreen;
 } Room;
 
 typedef struct Hall {
