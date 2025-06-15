@@ -7,8 +7,11 @@
 
 void main_menu_render(void *context) {
 	MenuData *ctx = context;
+
 	display_title();
+
 	char *things[] = {"Start", "Settings", "Exit"};
+	FrameSwitchFn fns[] = {NULL, NULL, NULL};
 	for (int i = 0; i < 3; ++i) {
 		if (i == ctx->selected) {
 			attron(A_ITALIC | A_BOLD | A_UNDERLINE);
@@ -16,6 +19,8 @@ void main_menu_render(void *context) {
 			attroff(A_ITALIC | A_BOLD | A_UNDERLINE);
 		} else
 			draw_txtbox(things[i], 12 + i*8, maxx/2 - 26, 7, 50);
+
+		ctx->menu_fns[i] = fns[i];
 	}
 }
 
@@ -25,6 +30,10 @@ LogicFrameAction main_menu_logic(void *context) {
 	int ch = get_input();
 	switch(ch) {
 		case 'q': return LFRAME_EXIT; break;
+		case '\n':
+			if(ctx->menu_fns[ctx->selected] != NULL)
+				(void) ctx->menu_fns[ctx->selected];
+			break;
 		case 'j':
 			if (ctx->selected < 2)
 				++ctx->selected;
@@ -43,7 +52,7 @@ void main_menu_exit(void *context) {
 	free(context);
 }
 
-void main_menu_create() {
+void main_menu_create(void *context) {
 	MenuData *ctx = malloc(sizeof(*ctx));
 	ctx->selected = 0;
 	

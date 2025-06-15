@@ -7,7 +7,7 @@
 int main() {
 	vfx_init();
 
-	main_menu_create();
+	main_menu_create(NULL);
 	eventloop_run();
 	
 	vfx_teardown();
