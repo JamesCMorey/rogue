@@ -112,6 +112,7 @@ int get_input() {
 	return getch();
 }
 
+/* TODO: fix some of the off-by-one stuff going on here */
 int draw_rect(int y, int x, int height, int width) {
 	/* Rect extents */
 	int x0 = x;
@@ -163,3 +164,4 @@ void draw_txtbox(char *txt, int y, int x, int height, int width) {
 	mvprintw(y + height/2, x + (width/2 - strlen(txt)/2), "%s", txt);
 	draw_rect(y, x, height, width);
 }
+

@@ -7,9 +7,27 @@
 WorldData world;
 
 void render_world(void *context) {
+	/* Draw rooms */
 	Room *r;
+	for (int i = 0; i < 3; ++i) {
+		for (int j = 0; j < 3; ++j) {
+			r = &world.rooms[i][j];
+			r->onscreen = draw_rect(camy(r->world_y), camx(r->world_x), r->height, r->width);
+
+			if (r->onscreen) {
+				Door *d;
+				for (int k = 0; k < 4; ++k) {
+					d = &r->doors[k];
+					mvprintw(camy(d->y), camx(d->x), "+");
+				}
+			}
+		}
+	}
+
+	/* Draw hall */
+	Hall *h;
 	for (int i = 0; i < world.room_num; ++i) {
-		r = &world.rooms[i];
+		h = &world.halls[i];
 		r->onscreen = draw_rect(camy(r->world_y), camx(r->world_x), r->height, r->width);
 	}
 
@@ -29,23 +47,25 @@ void move_player(int y, int x) {
 
 	Player *p = &world.player;
 	Room *r;
-	for (int i = 0; i < world.room_num; ++i) {
-		r = &world.rooms[i];
-		/* Check if on screen and in room */
-		if (r->onscreen
-				&& (r->world_x < p->x && p->x < r->width + r->world_x)
-				&& (r->world_y < p->y && p->y < r->height + r->world_y)) {
-			/* Check if next to wall */
-			if (p->y + 1 == r->world_y + r->height - 1) down = 0;
-			if (p->y - 1 == r->world_y) up = 0;
-			if (p->x - 1 == r->world_x) left = 0;
-			if (p->x + 1 == r->world_x + r->width - 2) right = 0;
-		}
-	}
+	// for (int i = 0; i < world.room_num; ++i) {
+	// 	r = &world.rooms[i];
+	// 	/* Check if on screen and in room */
+	// 	if (r->onscreen
+	// 			&& (r->world_x < p->x && p->x < r->width + r->world_x)
+	// 			&& (r->world_y < p->y && p->y < r->height + r->world_y)) {
+	// 		/* Check if next to wall */
+	// 		if (p->y + 1 == r->world_y + r->height - 1) down = 0;
+	// 		if (p->y - 1 == r->world_y) up = 0;
+	// 		if (p->x - 1 == r->world_x) left = 0;
+	// 		if (p->x + 1 == r->world_x + r->width - 2) right = 0;
+	// 	}
+	// }
 
 	/* Move if allowed */
-	if ((y > 0 && down) || (y < 0 && up)) p->y += y;
-	if ((x > 0 && right) || (x < 0 && left)) p->x += x;
+	// if ((y > 0 && down) || (y < 0 && up)) p->y += y;
+	// if ((x > 0 && right) || (x < 0 && left)) p->x += x;
+	p->y += y;
+	p->x += x;
 }
 
 void handle_movement(char c) {
@@ -78,21 +98,53 @@ void doom_world(void *context) {
 }
 
 void world_gen() {
-	world.room_num = 2;
+	/* Generate rooms */
+	world.room_num = 9;
+	Room *r;
+	int secw = 60;
+	int sech = secw/2;
+	for (int cnt = 0; cnt < 9; ++cnt) {
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 3; ++j) {
+				r = &world.rooms[i][j];
+				r->width = random() % 15 + 10;
+				r->height = random() % 5 + 10;
+				r->world_x = secw*i+1 + random()%(secw - r->width);
+				r->world_y = sech*j+1 + random()%(sech - r->height);
+				r->onscreen = 1;
+				for (int k = 0; k < 4; ++k) {
+					//if (random() % 3) {
+						switch(k) {
+							case 0: // above
+								r->doors[k].x = r->world_x + random()%r->width;
+								r->doors[k].y = r->world_y;
+								break;
+							case 2: // below
+								r->doors[k].x = r->world_x + random()%r->width;
+								r->doors[k].y = r->world_y + r->height;
+								break;
+							case 1: // right
+								r->doors[k].x = r->world_x + r->width;
+								r->doors[k].y = r->world_y + random()%r->height;
+								break;
+							case 3: // left
+								r->doors[k].x = r->world_x;
+								r->doors[k].y = r->world_y + random()%r->height;
+								break;
+						}
+					//}
+				}
+				++cnt;
+			}
+		}
+	}
 
-	Room *r = &world.rooms[0];
-	r->world_x = 12;
-	r->world_y = 12;
-	r->width = 20;
-	r->height = 10;
-	r->onscreen = 1;
+	/* Generate halls */
+	Hall *hl;
+	Room *t = &world.rooms[0][1];
+	r = &world.rooms[0][0];
 
-	r = &world.rooms[1];
-	r->world_x = -10;
-	r->world_y = -10;
-	r->width = 10;
-	r->height = 20;
-	r->onscreen = 1;
+	
 }
 
 void enter_world(void *context) {
