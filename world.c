@@ -7,11 +7,11 @@
 WorldData world;
 
 void render_world(void *context) {
-	/* Draw rooms */
-	Room *r;
-	for (int i = 0; i < 3; ++i) {
-		for (int j = 0; j < 3; ++j) {
-			r = &world.rooms[i][j];
+
+	Chunk *cnk = &world.chunks[50][50];
+	for (int y = 0; y < 3; ++y) {
+		for (int x = 0; x < 3; ++x) {
+			Room *r = &cnk->rooms[y][x];
 			r->onscreen = draw_rect(camy(r->world_y), camx(r->world_x), r->height, r->width);
 
 			if (r->onscreen) {
@@ -19,37 +19,18 @@ void render_world(void *context) {
 				for (int k = 0; k < 4; ++k) {
 					d = &r->doors[k];
 					if (k % 2 == 0) {
-						mvprintw(camy(d->y), camx(d->x), "+++"); /* TODO: partial displays */
+						mvprintw(camy(d->y), camx(d->x), "+++"); /* todo: partial displays */
 					} else {
 						mvprintw(camy(d->y), camx(d->x), "+");
 						mvprintw(camy(d->y + 1), camx(d->x), "+");
 					}
 				}
 			}
-			Hall *hl = &world.halls[0];
-			mvprintw(camy(hl->d1.y), camx(hl->d1.x + 1), "#");
-			mvprintw(camy(hl->d1.y + 1), camx(hl->d1.x + 1), "#");
-
-			mvprintw(camy(hl->d2.y), camx(hl->d2.x - 1), "#");
-			mvprintw(camy(hl->d2.y + 1), camx(hl->d2.x - 1), "#");
 		}
-	}
-
-	/* Draw hall */
-	Hall *h;
-	for (int i = 0; i < world.room_num; ++i) {
-		h = &world.halls[i];
-		r->onscreen = draw_rect(camy(r->world_y), camx(r->world_x), r->height, r->width);
 	}
 
 	draw_rect(maxy/2, maxx/2, 1, 2);
 	mvprintw(maxy - 1, 0, "y:%d, x:%d", world.player.y, world.player.x);
-	// int cnt = 0;
-	// for (int i = 0; i < world.room_num; ++i) {
-	// 	if (world.rooms[i].onscreen)
-	// 		++cnt;
-	// }
-	// mvprintw(maxy - 2, 0, "Checking %d rooms for collision", cnt);
 }
 
 void move_player(int y, int x) {
@@ -58,19 +39,19 @@ void move_player(int y, int x) {
 
 	Player *p = &world.player;
 	Room *r;
-	// for (int i = 0; i < world.room_num; ++i) {
-	// 	r = &world.rooms[i];
-	// 	/* Check if on screen and in room */
-	// 	if (r->onscreen
-	// 			&& (r->world_x < p->x && p->x < r->width + r->world_x)
-	// 			&& (r->world_y < p->y && p->y < r->height + r->world_y)) {
-	// 		/* Check if next to wall */
-	// 		if (p->y + 1 == r->world_y + r->height - 1) down = 0;
-	// 		if (p->y - 1 == r->world_y) up = 0;
-	// 		if (p->x - 1 == r->world_x) left = 0;
-	// 		if (p->x + 1 == r->world_x + r->width - 2) right = 0;
-	// 	}
-	// }
+	for (int i = 0; i < world.room_num; ++i) {
+		r = &world.chunks[50][50];
+		/* Check if on screen and in room */
+		if (r->onscreen
+				&& (r->world_x < p->x && p->x < r->width + r->world_x)
+				&& (r->world_y < p->y && p->y < r->height + r->world_y)) {
+			/* Check if next to wall */
+			if (p->y + 1 == r->world_y + r->height - 1) down = 0;
+			if (p->y - 1 == r->world_y) up = 0;
+			if (p->x - 1 == r->world_x) left = 0;
+			if (p->x + 1 == r->world_x + r->width - 2) right = 0;
+		}
+	}
 
 	/* Move if allowed */
 	// if ((y > 0 && down) || (y < 0 && up)) p->y += y;
@@ -108,66 +89,60 @@ void doom_world(void *context) {
 	return;
 }
 
+void place_doors(Room *r) {
+	for (int k = 0; k < 4; ++k) {
+		//if (random() % 3) {
+		switch(k) {
+			case 0: // above
+				r->doors[k].x = r->world_x + random()%(r->width - 3) + 1;
+				r->doors[k].y = r->world_y;
+				break;
+			case 1: // right
+				r->doors[k].x = r->world_x + r->width;
+				r->doors[k].y = r->world_y + random()%(r->height - 2) + 1;
+				break;
+			case 2: // below
+				r->doors[k].x = r->world_x + random()%(r->width - 3) + 1;
+				r->doors[k].y = r->world_y + r->height;
+				break;
+			case 3: // left
+				r->doors[k].x = r->world_x;
+				r->doors[k].y = r->world_y + random()%(r->height - 2) + 1;
+				break;
+		}
+		//}
+	}
+}
+
+void gen_chunk(int cnk_y, int cnk_x) {
+	Chunk *cnk = &world.chunks[cnk_y][cnk_x];
+
+	Room *r;
+	for (int y = 0; y < 3; ++y) {
+		for (int x = 0; x < 3; ++x) {
+			r = &cnk->rooms[y][x];
+			r->width = random() % 15 + 10;
+			r->height = random() % 5 + 10;
+			// offsets take the chunk or sector and convert them to world coords
+			// TODO: Fix the magic '51' that corresponds to the index in the world.chunks array		//            chunk offset           sector offset      random spot in sector
+			r->world_y = ((cnk_y - 51)*CHUNK_HEIGHT) + (SECTOR_HEIGHT*y+1) + random()%(SECTOR_HEIGHT - r->height); 
+				//CHUNK_HEIGHT*y+1 + random()%(CHUNK_HEIGHT - r->height);
+			r->world_x = ((cnk_x - 51)*CHUNK_WIDTH) + (SECTOR_WIDTH*x+1) + random()%(SECTOR_WIDTH - r->width);
+				//CHUNK_WIDTH*x+1 + random()%(CHUNK_WIDTH - r->width);
+
+			r->onscreen = 1;
+			place_doors(r);
+		}
+	}
+	cnk->room_num = 9;
+}
+
 void world_gen() {
 	/* Generate rooms */
 	world.room_num = 9;
-	Room *r;
-	int secw = 60;
-	int sech = secw/2;
-	for (int cnt = 0; cnt < 9; ++cnt) {
-		for (int i = 0; i < 3; ++i) {
-			for (int j = 0; j < 3; ++j) {
-				r = &world.rooms[i][j];
-				r->width = random() % 15 + 10;
-				r->height = random() % 5 + 10;
-				r->world_y = sech*i+1 + random()%(sech - r->height);
-				r->world_x = secw*j+1 + random()%(secw - r->width);
-				r->onscreen = 1;
-
-				/* place doors */
-				for (int k = 0; k < 4; ++k) {
-					//if (random() % 3) {
-						switch(k) {
-							case 0: // above
-								r->doors[k].x = r->world_x + random()%(r->width - 3) + 1;
-								r->doors[k].y = r->world_y;
-								break;
-							case 1: // right
-								r->doors[k].x = r->world_x + r->width;
-								r->doors[k].y = r->world_y + random()%(r->height - 2) + 1;
-								break;
-							case 2: // below
-								r->doors[k].x = r->world_x + random()%(r->width - 3) + 1;
-								r->doors[k].y = r->world_y + r->height;
-								break;
-							case 3: // left
-								r->doors[k].x = r->world_x;
-								r->doors[k].y = r->world_y + random()%(r->height - 2) + 1;
-								break;
-						}
-					//}
-				}
-				++cnt;
-			}
-		}
+	for (int i = 0; i < 9; ++i) {
+		gen_chunk(50 + i/3 - 1, 50 + i%3 - 1); // generate 3x3 around 0,0 (50, 50)
 	}
-
-	/* Generate halls */
-	Hall *hl = &world.halls[0];
-	Room *t = &world.rooms[0][1];
-	r = &world.rooms[0][0];
-	hl->d1 = r->doors[1];
-	hl->d2 = t->doors[3];
-	int y, x;
-	y = x = 0;
-	while (x < hl->d2.x - hl->d1.x)
-		++x;
-
-	while (y < hl->d2.y - hl->d1.y)
-		++y;
-
-	hl->p[0].x = x;
-	hl->p[0].y = y;
 }
 
 void enter_world(void *context) {
