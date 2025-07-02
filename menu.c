@@ -11,7 +11,8 @@ void main_menu_render(void *context) {
 	display_title();
 
 	char *things[] = {"Start", "Settings", "Exit"};
-	FrameSwitchFn fns[] = {enter_world, NULL, NULL};
+	// TODO: YIKES what is this doing here???
+	FrameSwitchFn fns[] = {enter_world, NULL, NULL}; 
 	for (int i = 0; i < 3; ++i) {
 		if (i == ctx->selected) {
 			attron(A_ITALIC | A_BOLD | A_UNDERLINE);

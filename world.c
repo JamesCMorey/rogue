@@ -18,9 +18,20 @@ void render_world(void *context) {
 				Door *d;
 				for (int k = 0; k < 4; ++k) {
 					d = &r->doors[k];
-					mvprintw(camy(d->y), camx(d->x), "+");
+					if (k % 2 == 0) {
+						mvprintw(camy(d->y), camx(d->x), "+++"); /* TODO: partial displays */
+					} else {
+						mvprintw(camy(d->y), camx(d->x), "+");
+						mvprintw(camy(d->y + 1), camx(d->x), "+");
+					}
 				}
 			}
+			Hall *hl = &world.halls[0];
+			mvprintw(camy(hl->d1.y), camx(hl->d1.x + 1), "#");
+			mvprintw(camy(hl->d1.y + 1), camx(hl->d1.x + 1), "#");
+
+			mvprintw(camy(hl->d2.y), camx(hl->d2.x - 1), "#");
+			mvprintw(camy(hl->d2.y + 1), camx(hl->d2.x - 1), "#");
 		}
 	}
 
@@ -109,27 +120,29 @@ void world_gen() {
 				r = &world.rooms[i][j];
 				r->width = random() % 15 + 10;
 				r->height = random() % 5 + 10;
-				r->world_x = secw*i+1 + random()%(secw - r->width);
-				r->world_y = sech*j+1 + random()%(sech - r->height);
+				r->world_y = sech*i+1 + random()%(sech - r->height);
+				r->world_x = secw*j+1 + random()%(secw - r->width);
 				r->onscreen = 1;
+
+				/* place doors */
 				for (int k = 0; k < 4; ++k) {
 					//if (random() % 3) {
 						switch(k) {
 							case 0: // above
-								r->doors[k].x = r->world_x + random()%r->width;
+								r->doors[k].x = r->world_x + random()%(r->width - 3) + 1;
 								r->doors[k].y = r->world_y;
-								break;
-							case 2: // below
-								r->doors[k].x = r->world_x + random()%r->width;
-								r->doors[k].y = r->world_y + r->height;
 								break;
 							case 1: // right
 								r->doors[k].x = r->world_x + r->width;
-								r->doors[k].y = r->world_y + random()%r->height;
+								r->doors[k].y = r->world_y + random()%(r->height - 2) + 1;
+								break;
+							case 2: // below
+								r->doors[k].x = r->world_x + random()%(r->width - 3) + 1;
+								r->doors[k].y = r->world_y + r->height;
 								break;
 							case 3: // left
 								r->doors[k].x = r->world_x;
-								r->doors[k].y = r->world_y + random()%r->height;
+								r->doors[k].y = r->world_y + random()%(r->height - 2) + 1;
 								break;
 						}
 					//}
@@ -140,11 +153,21 @@ void world_gen() {
 	}
 
 	/* Generate halls */
-	Hall *hl;
+	Hall *hl = &world.halls[0];
 	Room *t = &world.rooms[0][1];
 	r = &world.rooms[0][0];
+	hl->d1 = r->doors[1];
+	hl->d2 = t->doors[3];
+	int y, x;
+	y = x = 0;
+	while (x < hl->d2.x - hl->d1.x)
+		++x;
 
-	
+	while (y < hl->d2.y - hl->d1.y)
+		++y;
+
+	hl->p[0].x = x;
+	hl->p[0].y = y;
 }
 
 void enter_world(void *context) {

@@ -9,6 +9,18 @@
 /* Structures */
 typedef struct Room Room;
 
+typedef enum {
+	UP = 0,
+	RIGHT,
+	DOWN,
+	LEFT
+} Direction;
+
+typedef struct Pivot {
+	int y, x;
+	Direction dir;
+} Pivot;
+
 typedef struct Door {
 	Room *r;
 	int y, x;
@@ -23,6 +35,7 @@ struct Room {
 
 typedef struct Hall {
 	Door d1, d2;
+	Pivot p[10];
 } Hall;
 
 /* Player within world */
