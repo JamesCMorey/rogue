@@ -18,6 +18,12 @@
 #define WORLD_WIDTH 100
 #define WORLD_HEIGHT 100
 
+#define world_y(cy, sy, ry) ((cy*CHUNK_HEIGHT) \
++ (sy*SECTOR_HEIGHT) + (ry) - (CHUNK_HEIGHT/2))
+
+#define world_x(cx, sx, rx) ((cx*CHUNK_WIDTH) \
++ (sx*SECTOR_WIDTH) + (rx) - (CHUNK_WIDTH/2))
+
 /* Structures */
 typedef struct Room Room;
 

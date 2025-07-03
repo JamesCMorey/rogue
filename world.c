@@ -46,9 +46,9 @@ void render_chunk(int cy, int cx) {
 		for (int sx = 0; sx < 3; ++sx) {
 			Sector *s = &cnk->sectors[sy][sx];
 			Room *r = &s->r;
-			int r_world_y = (cy*CHUNK_HEIGHT) + (sy*SECTOR_HEIGHT) + (r->y);
-			int r_world_x = (cx*CHUNK_WIDTH) + (sx*SECTOR_WIDTH) + (r->x);
 
+			int r_world_y = world_y(cy, sy, r->y);
+			int r_world_x = world_x(cx, sx, r->x);
 			r->onscreen = draw_rect(camy(r_world_y), camx(r_world_x),
 			                        r->height, r->width);
 
