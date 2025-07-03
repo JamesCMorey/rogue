@@ -14,6 +14,10 @@
 #define CHUNK_WIDTH (SECTOR_WIDTH*3)
 #define CHUNK_HEIGHT (CHUNK_WIDTH/2)
 
+// measured in chunks
+#define WORLD_WIDTH 100
+#define WORLD_HEIGHT 100
+
 /* Structures */
 typedef struct Room Room;
 
@@ -24,31 +28,28 @@ typedef enum {
 	LEFT
 } Direction;
 
-typedef struct Pivot {
-	int y, x;
-	Direction dir;
-} Pivot;
+// typedef struct Hall {
+// } Hall;
 
 typedef struct Door {
 	Room *r;
-	int y, x;
+	int y, x; // with respect to the room in which the door is placed
 } Door;
 
 struct Room {
-	int world_x, world_y;
+	int x, y; // with respect to the sector in which the room resides
 	int width, height;
 	int onscreen;
 	Door doors[4];
 };
 
-typedef struct Hall {
-	Door d1, d2;
-	Pivot p[10];
-} Hall;
+typedef struct Sector {
+	bool hasroom;
+	Room r;
+} Sector;
 
 typedef struct Chunk {
-	int room_num;
-	Room rooms[3][3]; /* TODO: Make this dynamic / fit the screen */
+	Sector sectors[3][3]; /* TODO: Make this dynamic / fit the screen */
 	bool onscreen;
 } Chunk;
 
@@ -60,14 +61,11 @@ typedef struct Player {
 
 /* Global state of world */
 typedef struct WorldData {
-	int room_num, hall_num;
-	Chunk chunks[101][101];
-	Hall halls[1000];
+	Chunk chunks[WORLD_HEIGHT][WORLD_WIDTH];
 	Player player;
 } WorldData; 
 
 extern WorldData world;
 
-void world_gen();
 void world_load();
 void enter_world(void *context);
