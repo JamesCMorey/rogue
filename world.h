@@ -8,11 +8,11 @@
  * of sectors and is used for swapping in and out of the 2d-array used for 
  * rendering and simulation.
  * */
-#define CHUNK_WIDTH 100
-#define CHUNK_HEIGHT (CHUNK_WIDTH/2)
-
 #define SECTOR_WIDTH 60
 #define SECTOR_HEIGHT (SECTOR_WIDTH/2)
+
+#define CHUNK_WIDTH (SECTOR_WIDTH*3)
+#define CHUNK_HEIGHT (CHUNK_WIDTH/2)
 
 /* Structures */
 typedef struct Room Room;
@@ -48,19 +48,19 @@ typedef struct Hall {
 
 typedef struct Chunk {
 	int room_num;
-	Room rooms[3][3]; /* Make this dynamic / fit the screen */
+	Room rooms[3][3]; /* TODO: Make this dynamic / fit the screen */
 	bool onscreen;
 } Chunk;
 
 /* Player within world */
 typedef struct Player {
 	int y, x;
+	char view[CHUNK_HEIGHT*3][CHUNK_WIDTH*3];
 } Player;
 
 /* Global state of world */
 typedef struct WorldData {
 	int room_num, hall_num;
-	//Room rooms[100][100];
 	Chunk chunks[101][101];
 	Hall halls[1000];
 	Player player;

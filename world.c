@@ -6,9 +6,18 @@
 
 WorldData world;
 
-void render_world(void *context) {
+void render_chunkmap() {
+	for (int y = 0; y < 3; ++y) {
+		for (int x = 0; x < 3; ++x) {
+		int world_y = ((-1)*CHUNK_HEIGHT) + (SECTOR_HEIGHT*y+1); 
+		int world_x = ((-1)*CHUNK_WIDTH) + (SECTOR_WIDTH*x+1);
+		draw_rect(camy(world_y), camx(world_x), SECTOR_HEIGHT, SECTOR_WIDTH);
+		}
+	}
+}
 
-	Chunk *cnk = &world.chunks[50][50];
+void render_chunk(int y, int x) {
+	Chunk *cnk = &world.chunks[y][x];
 	for (int y = 0; y < 3; ++y) {
 		for (int x = 0; x < 3; ++x) {
 			Room *r = &cnk->rooms[y][x];
@@ -28,7 +37,16 @@ void render_world(void *context) {
 			}
 		}
 	}
+}
 
+void render_world(void *context) {
+	for (int y = 0; y < 3; ++y) {
+		for (int x = 0; x < 3; ++x) {
+			render_chunk(y + 49, x + 49);
+		}
+	}
+
+	//render_chunkmap();
 	draw_rect(maxy/2, maxx/2, 1, 2);
 	mvprintw(maxy - 1, 0, "y:%d, x:%d", world.player.y, world.player.x);
 }
@@ -126,9 +144,7 @@ void gen_chunk(int cnk_y, int cnk_x) {
 			// offsets take the chunk or sector and convert them to world coords
 			// TODO: Fix the magic '51' that corresponds to the index in the world.chunks array		//            chunk offset           sector offset      random spot in sector
 			r->world_y = ((cnk_y - 51)*CHUNK_HEIGHT) + (SECTOR_HEIGHT*y+1) + random()%(SECTOR_HEIGHT - r->height); 
-				//CHUNK_HEIGHT*y+1 + random()%(CHUNK_HEIGHT - r->height);
 			r->world_x = ((cnk_x - 51)*CHUNK_WIDTH) + (SECTOR_WIDTH*x+1) + random()%(SECTOR_WIDTH - r->width);
-				//CHUNK_WIDTH*x+1 + random()%(CHUNK_WIDTH - r->width);
 
 			r->onscreen = 1;
 			place_doors(r);
