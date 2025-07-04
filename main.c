@@ -5,9 +5,11 @@
 #include "world.h"
 #include "evloop.h"
 #include "menu.h"
+#include "log.h"
 
 
 int main() {
+	log_init();
 	vfx_init();
 	srand(time(NULL));
 
@@ -15,5 +17,6 @@ int main() {
 	eventloop_run();
 	
 	vfx_teardown();
+	log_teardown();
 	return 0;
 }

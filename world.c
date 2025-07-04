@@ -1,8 +1,10 @@
 #include "world.h"
 #include "evloop.h"
 #include "vfx.h"
+#include "log.h"
 #include <stdlib.h>
 #include <ncurses.h>
+#include <string.h>
 
 WorldData world;
 
@@ -58,7 +60,11 @@ void render_chunk(int cy, int cx) {
 }
 
 void render_world(void *context) {
-	render_chunk(0, 0);
+	for (int y = -1; y < 2; ++y) {
+		for (int x = -1; x < 2; ++x) {
+			render_chunk(y, x);
+		}
+	}
 
 	//render_chunkmap();
 	draw_rect(maxy/2, maxx/2, 1, 2);
@@ -164,6 +170,55 @@ void chunk_init(int cnk_y, int cnk_x) {
 	}
 }
 
+void view_load_sector(int ay, int ax, Sector *s) {
+	Player *p = &world.player;
+	
+	// zero sector
+	for (int y = 0; y < SECTOR_HEIGHT; ++y) {
+		memset(&p->view[ay+y][ax], 0x20, SECTOR_WIDTH);
+	}
+	
+	// draw top and bottom walls of room
+	for (int x = 0; x < s->r.width; ++x) {
+		p->view[ay + s->r.y][ax + s->r.x + x] = '|';
+		p->view[ay + s->r.y + s->r.height][ax + s->r.x + x] = '|';
+	}
+
+	// draw left and right walls of room
+	for (int y = 0; y < s->r.height; ++y) {
+		p->view[ay + s->r.y + y][ax + s->r.x] = '|';
+		p->view[ay + s->r.y + y][ax + s->r.x + s->r.width] = '|';
+	}
+}
+
+void view_load_chunk(int cy, int cx, Chunk *c) {
+	for (int sy = 0; sy < 3; ++sy) {
+		for (int sx = 0; sx < 3; ++sx) {
+			Sector *s = &c->sectors[sy][sx];
+			// we have all necessary info for actual (y, x) position in 2d-array
+			view_load_sector(cy*CHUNK_HEIGHT + sy*SECTOR_HEIGHT,
+			                 cx*CHUNK_WIDTH + sx*SECTOR_WIDTH,
+			                 s);
+
+		}
+	}
+	
+}
+
+void view_init() {
+	for (int y = -1; y < 2; ++y) {
+		for (int x = -1; x < 2; ++x) {
+			Chunk *c = &world.chunks[y + WORLD_HEIGHT/2][x + WORLD_WIDTH/2];
+			view_load_chunk(y + 1, x + 1, c); // offset to stay in bounds of array
+		}
+	}
+
+	for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
+		wlog(world.player.view[i], CHUNK_WIDTH*3, sizeof(char));
+		plog("\n");
+	}
+}
+
 void world_init() {
 	/* Generate rooms */
 	for (int y = -1; y < 2; ++y) {
@@ -171,6 +226,7 @@ void world_init() {
 			chunk_init(y, x);
 		} 
 	}
+	view_init();
 }
 
 void doom_world(void *context) {

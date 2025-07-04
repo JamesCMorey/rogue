@@ -6,5 +6,6 @@ executable('rogue',
   'world.c',
   'evloop.c',
   'menu.c',
+  'log.c',
   dependencies : [dependency('ncursesw')]
 )
