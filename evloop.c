@@ -25,9 +25,9 @@ void eventloop_run() {
 }
 
 void eventloop_enter(void *context,
-										 RenderFrameFn render,
-										 LogicFrameFn logic,
-										 PostFrameFn exit)
+                     RenderFrameFn render,
+                     LogicFrameFn logic,
+                     PostFrameFn exit)
 {
 	if (evloop.stack_ptr == NULL) {
 		evloop.stack_ptr = evloop.stack;
