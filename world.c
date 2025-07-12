@@ -2,6 +2,8 @@
 #include "evloop.h"
 #include "vfx.h"
 #include "log.h"
+#include "geometry.h"
+#include "scene.h"
 #include <stdlib.h>
 #include <ncurses.h>
 #include <string.h>
@@ -11,15 +13,16 @@ WorldData world;
 /* The following applies to all chunk functions (render_chunk, gen_chunk, etc.)
  *
  * Params: The parameters x and y will be the x and y in the world, so (0, 0)
- * corresponds to the chunch at (0, 0) in the world, not [0][0] in the 2d-array
+ * corresponds to the chunk at (0, 0) in the world
  * */
 
-void render_chunkmap() {
+void render_chunkmap() { // TODO: Make this actually draw a chunkmap
 	for (int y = 0; y < 3; ++y) {
 		for (int x = 0; x < 3; ++x) {
-		int world_y = ((-1)*CHUNK_HEIGHT) + (SECTOR_HEIGHT*y+1); 
-		int world_x = ((-1)*CHUNK_WIDTH) + (SECTOR_WIDTH*x+1);
-		draw_rect(camy(world_y), camx(world_x), SECTOR_HEIGHT, SECTOR_WIDTH);
+			Coord w = coord_add(chunk_offset(-1, -1),
+			          coord_add(sector_offset(y, x),
+			                    coord(1, 1)));
+			draw_rect(camy(w.y), camx(w.x), SECTOR_HEIGHT, SECTOR_WIDTH);
 		}
 	}
 }
@@ -29,7 +32,7 @@ void render_doors(int r_world_y, int r_world_x, Room *r) {
 		return;
 
 	for (int k = 0; k < 4; ++k) {
-		Door *d = &r->doors[k];
+		Coord *d = &r->doors[k];
 
 		if (k % 2 == 0) {
 			/* TODO: partial displays */
@@ -46,15 +49,15 @@ void render_chunk(int cy, int cx) {
 
 	for (int sy = 0; sy < 3; ++sy) {
 		for (int sx = 0; sx < 3; ++sx) {
-			Sector *s = &cnk->sectors[sy][sx];
-			Room *r = &s->r;
+			Room *r = &cnk->sectors[sy][sx].r;
+			Coord w = world_offset(cy, cx, sy, sx, r->y, r->x);
 
-			int r_world_y = world_y(cy, sy, r->y);
-			int r_world_x = world_x(cx, sx, r->x);
-			r->onscreen = draw_rect(camy(r_world_y), camx(r_world_x),
+			// int r_world_y = world_y(cy, sy, r->y);
+			// int r_world_x = world_x(cx, sx, r->x);
+			r->onscreen = draw_rect(camy(w.y), camx(w.x),
 			                        r->height, r->width);
 
-			render_doors(r_world_y, r_world_x, r);
+			render_doors(w.y, w.x, r);
 		}
 	}
 }
@@ -163,59 +166,14 @@ void sector_init(Sector *s) {
 
 void chunk_init(int cnk_y, int cnk_x) {
 	Chunk *cnk = &world.chunks[cnk_y + WORLD_HEIGHT/2][cnk_x + WORLD_WIDTH/2];
+
+	/* TODO: Make this switch out as player moves */
+	scn.chunks[cnk_y + 1][cnk_x + 1] = cnk;
+
 	for (int y = 0; y < 3; ++y) {
 		for (int x = 0; x < 3; ++x) {
 			sector_init(&cnk->sectors[y][x]);
 		}
-	}
-}
-
-void view_load_sector(int ay, int ax, Sector *s) {
-	Player *p = &world.player;
-	
-	// zero sector
-	for (int y = 0; y < SECTOR_HEIGHT; ++y) {
-		memset(&p->view[ay+y][ax], 0x20, SECTOR_WIDTH);
-	}
-	
-	// draw top and bottom walls of room
-	for (int x = 0; x < s->r.width; ++x) {
-		p->view[ay + s->r.y][ax + s->r.x + x] = '|';
-		p->view[ay + s->r.y + s->r.height][ax + s->r.x + x] = '|';
-	}
-
-	// draw left and right walls of room
-	for (int y = 0; y < s->r.height; ++y) {
-		p->view[ay + s->r.y + y][ax + s->r.x] = '|';
-		p->view[ay + s->r.y + y][ax + s->r.x + s->r.width] = '|';
-	}
-}
-
-void view_load_chunk(int cy, int cx, Chunk *c) {
-	for (int sy = 0; sy < 3; ++sy) {
-		for (int sx = 0; sx < 3; ++sx) {
-			Sector *s = &c->sectors[sy][sx];
-			// we have all necessary info for actual (y, x) position in 2d-array
-			view_load_sector(cy*CHUNK_HEIGHT + sy*SECTOR_HEIGHT,
-			                 cx*CHUNK_WIDTH + sx*SECTOR_WIDTH,
-			                 s);
-
-		}
-	}
-	
-}
-
-void view_init() {
-	for (int y = -1; y < 2; ++y) {
-		for (int x = -1; x < 2; ++x) {
-			Chunk *c = &world.chunks[y + WORLD_HEIGHT/2][x + WORLD_WIDTH/2];
-			view_load_chunk(y + 1, x + 1, c); // offset to stay in bounds of array
-		}
-	}
-
-	for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
-		wlog(world.player.view[i], CHUNK_WIDTH*3, sizeof(char));
-		plog("\n");
 	}
 }
 
@@ -226,7 +184,13 @@ void world_init() {
 			chunk_init(y, x);
 		} 
 	}
-	view_init();
+	scn_init();
+	// join_sectors(0, 0, 0, 1); // just hardcode/try top left sectors for now
+
+	for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
+		wlog(scn.tm[i], CHUNK_WIDTH*3, sizeof(char));
+		plog("\n");
+	}
 }
 
 void doom_world(void *context) {
