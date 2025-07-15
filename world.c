@@ -131,20 +131,24 @@ void place_doors(Room *r) {
 		//if (random() % 3) {
 		switch(k) {
 			case 0: // above
-				r->doors[k].x = random()%(r->width - 3) + 1;
+				// +1 to make sure it's not on left edge
+				// -3 for length of door -1 for right edge
+				r->doors[k].x = random()%(r->width - 3 - 1) + 1;
 				r->doors[k].y = 0;
 				break;
 			case 1: // right
-				r->doors[k].x = r->width;
-				r->doors[k].y = random()%(r->height - 2) + 1;
+				r->doors[k].x = r->width - 1; // see draw_rect() for -1 explanation
+				// +1 to make sure it's not on upper edge
+				// -2 for length of door -1 for bottom edge
+				r->doors[k].y = random()%(r->height - 2 - 1) + 1;
 				break;
 			case 2: // below
-				r->doors[k].x = random()%(r->width - 3) + 1;
-				r->doors[k].y = r->height;
+				r->doors[k].x = random()%(r->width - 3 - 1) + 1;
+				r->doors[k].y = r->height - 1;
 				break;
 			case 3: // left
 				r->doors[k].x = 0;
-				r->doors[k].y = random()%(r->height - 2) + 1;
+				r->doors[k].y = random()%(r->height - 2 - 1) + 1;
 				break;
 		}
 		//}

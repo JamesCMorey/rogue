@@ -44,7 +44,7 @@ bool in_room(Coord c, Coord cnk, Coord sec) {
  * */
 void join_sectors(Coord cnk, Coord s1, Coord s2) {
 	Coord cur = scn_door_coord(cnk, s1, LEFT);
-	Coord tar = scn_door_coord(cnk, s2, RIGHT);
+	Coord tar = scn_door_coord(cnk, s2, LEFT);
 	Coord diff = coord_sub(tar, cur);
 
 	int cnt = 0;
@@ -111,18 +111,17 @@ void scn_load_sector(Coord cnk, Coord sec) {
 	          coord_add(sector_offset(sec.y, sec.x),
 	                    coord(s->r.y, s->r.x)));
 
-	// loops are <= bc they were not drawing bottom right corner
-
 	// draw top and bottom walls of room
-	for (int x = 0; x <= s->r.width; ++x) {
-		scn.tm[r.y][r.x + x] =
-		scn.tm[r.y + s->r.height][r.x + x] = CO_WALL;
+	for (int x = 0; x < s->r.width; ++x) {
+		scn.tm[r.y][r.x + x] = CO_WALL; // top
+		// see draw_rect() for -1 explanation
+		scn.tm[r.y + s->r.height - 1][r.x + x] = CO_WALL; // bottom
 	}
 
 	// draw left and right walls of room
-	for (int y = 0; y <= s->r.height; ++y) {
-		scn.tm[r.y + y][r.x] =
-		scn.tm[r.y + y][r.x + s->r.width] = CO_WALL;
+	for (int y = 0; y < s->r.height; ++y) {
+		scn.tm[r.y + y][r.x] = CO_WALL; // left
+		scn.tm[r.y + y][r.x + s->r.width - 1] = CO_WALL; // right
 	}
 
 	// draw doors
