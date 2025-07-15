@@ -2,21 +2,38 @@
 #include "geometry.h"
 #include "world.h"
 #include <string.h>
+#include <stdlib.h>
 
 Scene scn;
 
-// Using index offsets
-Sector *scn_sector(int cy, int cx, int sy, int sx) {
-	return &scn.chunks[cy][cx]->sectors[sy][sx];
+Sector *scn_sector(Coord cnk, Coord sec) {
+	return &scn.chunks[cnk.y][cnk.x]->sectors[sec.y][sec.x];
 }
 
-Coord scn_door_coord(int cy, int cx, int sy, int sx, int dir) {
-	Sector *s = scn_sector(cy, cx, sy, sx);
+Coord scn_point(Coord cnk, Coord sec, Coord pnt) {
+	return coord_add(chunk_offset(cnk.y, cnk.x),
+	       coord_add(sector_offset(sec.y, sec.x),
+	                 pnt));
+}
 
-	return coord_add(chunk_offset(cy, cx),  // chunk offset
-	       coord_add(sector_offset(sy, sx), // sector offset
-	       coord_add(coord(s->r.y, s->r.x), // room offset
-	                 s->r.doors[dir])));    // door offset
+Coord scn_door_coord(Coord cnk, Coord sec, int dir) {
+	Sector *s = scn_sector(cnk, sec);
+	// find the scn coords for the pnt of the door pnt coords = (room  + door)
+	return scn_point(cnk, sec,
+	                 coord_add(coord(s->r.y, s->r.x), s->r.doors[dir]));
+}
+
+char *tile_at(Coord c) {
+	return &scn.tm[c.y][c.x];
+}
+
+bool in_room(Coord c, Coord cnk, Coord sec) {
+	Room *r = &scn_sector(cnk, sec)->r;
+	// y is reversed so top left appears as bottom right on screen
+	return coord_inside(c,
+	            /* TODO (REALLY IMPORTANT): check rooms implementation to see why + 1 is needed */
+	            scn_point(cnk, sec, coord(r->y + r->height, r->x + 1)),
+	            scn_point(cnk, sec, coord(r->y, r->x + r->width)));
 }
 
 /*
@@ -26,23 +43,68 @@ Coord scn_door_coord(int cy, int cx, int sy, int sx, int dir) {
  *	s2 is the same
  * */
 void join_sectors(Coord cnk, Coord s1, Coord s2) {
-	Coord d1 = scn_door_coord(cnk.y, cnk.x, s1.y, s1.x, RIGHT);
-	scn.tm[d1.y][d1.x + 1] = '#';
+	Coord cur = scn_door_coord(cnk, s1, LEFT);
+	Coord tar = scn_door_coord(cnk, s2, RIGHT);
+	Coord diff = coord_sub(tar, cur);
+
+	int cnt = 0;
+	int y = 0, x = 0;
+	while ((y != diff.y || x != diff.x - 1) && cnt < 500) {
+		++cnt;
+
+		// 1. either -1 or 1 depending on whether component is pos or neg
+		// 2. (-x/y) makes the direction of travel relative to the current position 
+		//        and not just the source
+		int x_dir = (diff.x - x) / abs(diff.x - x);
+		int y_dir = (diff.y - y) / abs(diff.y - y);
+
+		// step from cur in direction of target
+		Coord next_x = coord_add(cur, coord(0, x_dir));
+		Coord next_y = coord_add(cur, coord(y_dir, 0));
+ 
+		// Check if step is inside room
+		// if so, step in opposite direction and save that decision in x/y_dir
+		if (in_room(next_x, cnk, s1)) {
+			x_dir = -x_dir;
+			next_x = coord_add(cur, coord(0, x_dir));
+		}
+
+		if (in_room(next_y, cnk, s1)) {
+			y_dir = -y_dir;
+			next_y = coord_add(cur, coord(y_dir, 0));
+		}
+
+		/* Grab potential next tiles */
+		char *x_tile = tile_at(next_x);
+		char *y_tile = tile_at(next_y);
+
+		/* Take a step to the right or left if possible */
+		if (x != diff.x - 1 && (*x_tile == CO_EMPTY || *x_tile == CO_HALL)) {
+			*x_tile = CO_HALL;
+			x += x_dir;
+			cur = next_x;
+		} // TODO: Organize this. I don't think we need an if and a while
+		else if (*y_tile == CO_EMPTY || *y_tile == CO_HALL) {
+			/* If it's not possible, go up or down till it is. */
+			do {
+				*y_tile = CO_HALL;
+				y += y_dir;
+				cur = next_y;
+
+				next_y = coord_add(cur, coord(y_dir, 0));
+				y_tile = tile_at(next_y);
+			} while (y != diff.y && *tile_at(coord_add(cur, coord(0, x_dir))) != CO_EMPTY);
+		}
+	}
 }
 
 void gen_halls(Chunk *c) {
-	// for (int y = 0; y < 3; ++y) {
-	// 	for (int x = 0; x < 3; ++x) {
-			join_sectors(coord(0, 0),
-			             coord(0, 0),
-			             coord(0, 1));
-	// 	}
-	// }
+	return;
 }
 
 /* Load sector (specified by cnk and sec) from chunk references into tilemap */ 
 void scn_load_sector(Coord cnk, Coord sec) {
-	Sector *s = scn_sector(cnk.y, cnk.x, sec.y, sec.x);
+	Sector *s = scn_sector(cnk, sec);
 
 	// coords for room in tilemap
 	Coord r = coord_add(chunk_offset(cnk.y, cnk.x),
@@ -100,7 +162,7 @@ void scn_load_chunk(Chunk *c, int cy, int cx) {
 	}
 
 	// Draw halls in tilemap
-	gen_halls(c);
+	//gen_halls(c);
 }
 
 void scn_init() {
@@ -110,4 +172,10 @@ void scn_init() {
 			scn_load_chunk(c, y + 1, x + 1); // offset to stay in bounds of array
 		}
 	}
+	join_sectors(coord(0, 0),
+							coord(0, 0),
+							coord(0, 1));
+	// join_sectors(coord(0, 0),
+	// 						coord(1, 0),
+	// 						coord(0, 1));
 }

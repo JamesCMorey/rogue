@@ -8,7 +8,8 @@ typedef enum {
 	CO_EMPTY = ' ',
 	CO_WALL = '|',
 	CO_CLOSED_DOOR = '+',
-	CO_OPEN_DOOR = '_'
+	CO_OPEN_DOOR = '_',
+	CO_HALL = '#'
 } CharObject;
 
 typedef struct Room {
