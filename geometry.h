@@ -46,9 +46,10 @@ static inline Coord coord_sub(Coord a, Coord b) {
 	return coord(a.y - b.y, a.x - b.x);
 }
 
-/* Assume that tl is the top left (max y) and br is bottom right (max x) */
+/* Assume that tl is the top left (min y/x) and br is bottom right (max y/x) */
 static inline bool coord_inside(Coord a, Coord tl, Coord br) {
-	return (br.y <= a.y && a.y <= tl.y) && (tl.x <= a.x && a.x <= br.x);
+	return (tl.y <= a.y && a.y < br.y) && (tl.x <= a.x && a.x <= br.x);
+	//return (br.y <= a.y && a.y <= tl.y) && (tl.x <= a.x && a.x <= br.x);
 }
 
 static inline Coord chunk_offset(int cy, int cx) {
