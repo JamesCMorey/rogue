@@ -43,6 +43,26 @@ Coord scn_start_coord(Coord cnk, Coord sec, Direction dir) {
 	return door;
 }
 
+Coord scn_end_coord(Coord cnk, Coord sec, Direction dir) {
+	Coord door = scn_door_coord(cnk, sec, dir);
+	switch (dir) {
+		case UP:
+			door = coord_add(door, coord(-1, 0));
+			break;
+		case RIGHT:
+			door = coord_add(door, coord(0, 1));
+			break;
+		case DOWN:
+			door = coord_add(door, coord(1, 0));
+			break;
+		case LEFT:
+			door = coord_add(door, coord(0, -1));
+			break;
+	}
+
+	return door;
+}
+
 char *tile_at(Coord c) {
 	return &scn.tm[c.y][c.x];
 }
@@ -65,7 +85,7 @@ bool in_room(Coord c, Coord cnk, Coord sec) {
  * */
 void join_sectors(Coord cnk, Coord s1, Coord s2) {
 	Coord cur = scn_start_coord(cnk, s1, LEFT);
-	Coord tar = scn_door_coord(cnk, s2, UP);
+	Coord tar = scn_end_coord(cnk, s2, DOWN);
 	Coord diff = coord_sub(tar, cur);
 
 	*tile_at(cur) = '0';
@@ -73,7 +93,7 @@ void join_sectors(Coord cnk, Coord s1, Coord s2) {
 
 	int cnt = 0;
 	int y = 0, x = 0;
-	while ((y != diff.y || x != diff.x - 1) && cnt < 500) {
+	while ((y != diff.y || x != diff.x) && cnt < 500) {
 		++cnt;
 
 		// 1. either -1 or 1 depending on whether component is pos or neg
@@ -86,24 +106,12 @@ void join_sectors(Coord cnk, Coord s1, Coord s2) {
 		Coord next_x = coord_add(cur, coord(0, x_dir));
 		Coord next_y = coord_add(cur, coord(y_dir, 0));
  
-		// Check if step is inside room
-		// if so, step in opposite direction and save that decision in x/y_dir
-		// if (in_room(next_x, cnk, s1)) {
-		// 	x_dir = -x_dir;
-		// 	next_x = coord_add(cur, coord(0, x_dir));
-		// }
-		//
-		// if (in_room(next_y, cnk, s1)) {
-		// 	y_dir = -y_dir;
-		// 	next_y = coord_add(cur, coord(y_dir, 0));
-		// }
-
 		/* Grab potential next tiles */
 		char *x_tile = tile_at(next_x);
 		char *y_tile = tile_at(next_y);
 
 		/* Take a step to the right or left if possible */
-		if (x != diff.x - 1 && (*x_tile == CO_EMPTY || *x_tile == CO_HALL)) {
+		if (x != diff.x && (*x_tile == CO_EMPTY || *x_tile == CO_HALL)) {
 			*x_tile = CO_HALL;
 			x += x_dir;
 			cur = next_x;
