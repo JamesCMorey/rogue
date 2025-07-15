@@ -3,6 +3,8 @@
 #include "evloop.h"
 #include <locale.h>
 #include <ncursesw/ncurses.h>
+#include <wchar.h>
+#include <wctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -112,50 +114,69 @@ int get_input() {
 	return getch();
 }
 
-/* TODO: fix some of the off-by-one stuff going on here */
 int draw_rect(int y, int x, int height, int width) {
-	/* Rect extents */
-	int x0 = x;
-	int y0 = y;
-	int x1 = x + width;
-	int y1 = y + height;
+	/* Explanation of Rect extents
+	 *
+	 * br needs -1 because of the following (borders included in dimensions):
+	 * 
+	 * Imagine there was no -1 and we had a rect (2, 2) with a width 5.
+	 * 
+	 * tl would be (2,2), which requires no alteration as we will assume the 
+	 * user knows the grid starts at (0,0) and that (2,2) starts 3 cells out.
+	 * br would be (2, 7)
+	 * 
+	 * So, the leftmost wall would be drawn down from (2,2), which would be the
+	 * 3rd column visually. The rightmost wall would be drawn down from (2, 7),
+	 * which is the 8th column visually. This sounds fine till you realize that
+	 * means the 3rd and 8th columns are the _borders_ of the rect, meaning 
+	 * columns 4 through 7 are contained within the rect (4 columns) and the 3rd 
+	 * and 8th columns are used as the edges (2 columns), ultimately resulting in 
+	 * a rect of width 6.
+	 *
+	 * The same situation occurs with height as well.
+	 * */
+	Coord tl = coord(y, x); // coords of top left corner
+	Coord br = coord(y + height - 1, x + width - 1); // bottom right corner
 
-	/* Clamp coords to screen */
-	int draw_x0 = x0 < 0 ? 0 : x0;
-	int draw_y0 = y0 < 0 ? 0 : y0;
-	int draw_x1 = x1 > maxx ? maxx : x1;
-	int draw_y1 = y1 > maxy ? maxy : y1;
+	/* Clamp coords to screen
+	 * These are used in partial displays (ie. when left side is off screen but
+	 * right side is on screen).
+	 * */
+	Coord draw_tl = coord((tl.y < 0 ? 0 : tl.y), tl.x < 0 ? 0 : tl.x);
+	Coord draw_br = coord((br.y > maxy ? maxy : br.y), br.x > maxx ? maxx : br.x);
 
-	/* Offscreen--draw nothing */
-	if (draw_y0 >= draw_y1 || draw_x0 >= draw_x1) {
+	/* Offscreen--draw nothing
+	 * tl.x = -10 and width = 10 ->
+	 *     draw_tl.x = 0 (clamp on tl.x) and draw_br.x = 0 (tl.x + width)
+	 * */
+	if (draw_tl.y >= draw_br.y || draw_tl.x >= draw_br.x)
 		return 0;
-	}
 
 	/* Horizontal Edges */
-	if (0 <= y0 && y0 < maxy) {
-		move(y0, draw_x0);
-		hline(0, draw_x1 - draw_x0);
+	if (0 <= tl.y && tl.y < maxy) {
+		move(tl.y, draw_tl.x);
+		hline(0, draw_br.x - draw_tl.x);
 	}
-	if (0 <= y1 && y1 < maxy) {
-		move(y1, draw_x0);
-		hline(0, draw_x1 - draw_x0);
+	if (0 <= br.y && br.y < maxy) {
+		move(br.y, draw_tl.x);
+		hline(0, draw_br.x - draw_tl.x);
 	}
 
 	/* Vertical Edges */
-	if (0 <= x0 && x0 < maxx ) {
-		move(draw_y0, x0);
-		vline(0, draw_y1 - draw_y0);
+	if (0 <= tl.x && tl.x < maxx ) {
+		move(draw_tl.y, tl.x);
+		vline(0, draw_br.y - draw_tl.y);
 	}
-	if (0 <= x1 && x1 < maxx ) {
-		move(draw_y0, x1);
-		vline(0, draw_y1 - draw_y0);
+	if (0 <= br.x && br.x < maxx ) {
+		move(draw_tl.y, br.x);
+		vline(0, draw_br.y - draw_tl.y);
 	}
 
 	/* Draw Corners */
-	if (0 <= y0 && 0 <= x0) { move(y0, x0); addch(ACS_ULCORNER); }
-	if (0 <= y0 && x1 < maxx) { move(y0, x1); addch(ACS_URCORNER); }
-	if (y1 < maxy && 0 <= x0) { move(y1, x0); addch(ACS_LLCORNER); }
-	if (y1 < maxy && x1 < maxx) { move(y1, x1); addch(ACS_LRCORNER); }
+	if (0 <= tl.y && 0 <= tl.x) { move(tl.y, tl.x); addch(ACS_ULCORNER); }
+	if (0 <= tl.y && br.x < maxx) { move(tl.y, br.x); addch(ACS_URCORNER); }
+	if (br.y < maxy && 0 <= tl.x) { move(br.y, tl.x); addch(ACS_LLCORNER); }
+	if (br.y < maxy && br.x < maxx) { move(br.y, br.x); addch(ACS_LRCORNER); }
 
 	return 1;
 }

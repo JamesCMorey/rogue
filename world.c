@@ -70,7 +70,7 @@ void render_world(void *context) {
 	}
 
 	//render_chunkmap();
-	draw_rect(maxy/2, maxx/2, 1, 2);
+	draw_rect(maxy/2, maxx/2, 2, 3); // visual square; logical nightmare
 	mvprintw(maxy - 1, 0, "y:%d, x:%d", world.player.y, world.player.x);
 }
 
