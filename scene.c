@@ -85,11 +85,8 @@ bool in_room(Coord c, Coord cnk, Coord sec) {
  * */
 void join_sectors(Coord cnk, Coord s1, Coord s2) {
 	Coord cur = scn_start_coord(cnk, s1, LEFT);
-	Coord tar = scn_end_coord(cnk, s2, DOWN);
+	Coord tar = scn_end_coord(cnk, s2, LEFT);
 	Coord diff = coord_sub(tar, cur);
-
-	*tile_at(cur) = '0';
-	*tile_at(tar) = '9';
 
 	int cnt = 0;
 	int y = 0, x = 0;
@@ -115,7 +112,7 @@ void join_sectors(Coord cnk, Coord s1, Coord s2) {
 			*x_tile = CO_HALL;
 			x += x_dir;
 			cur = next_x;
-		} // TODO: Organize this. I don't think we need an if and a while
+		}
 		else if (*y_tile == CO_EMPTY || *y_tile == CO_HALL) {
 			/* If it's not possible, go up or down till it is. */
 			do {
@@ -125,7 +122,7 @@ void join_sectors(Coord cnk, Coord s1, Coord s2) {
 
 				next_y = coord_add(cur, coord(y_dir, 0));
 				y_tile = tile_at(next_y);
-			} while ((x != diff.x && y != diff.y)
+			} while ((x != diff.x || y != diff.y) // if either still needs fulfilling
 			          && *tile_at(coord_add(cur, coord(0, x_dir))) != CO_EMPTY);
 		}
 	}
