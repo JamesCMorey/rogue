@@ -52,12 +52,16 @@ bool tile_clear(char *t) {
  * sector's room and then digging a hall between them.
  *
  * Params:
- *  cnk: coords of the chunk
- *	s1, s2: coords of sectors within that chunk
+ *  cnk1, cnk2: coords of each chunk
+ *	s1, s2: coords of sector within their respective chunk
+ *
+ *	TODO
+ *	1. Fix infinite loop
+ *	2. Fix random seg fault
  * */
-void join_sectors(Coord cnk, Coord s1, Coord s2) {
-	Coord cur = scn_door_coord(cnk, s1, random()%DIR_COUNT);
-	Coord tar = scn_door_coord(cnk, s2, random()%DIR_COUNT);
+void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
+	Coord cur = scn_door_coord(cnk1, s1, random()%DIR_COUNT);
+	Coord tar = scn_door_coord(cnk2, s2, random()%DIR_COUNT);
 
 	// Compute the distance of the y- and x-components between the doors
 	int diff[2] = {coord_sub(tar, cur).y, coord_sub(tar, cur).x};
@@ -191,10 +195,16 @@ void scn_init() {
 			scn_load_chunk(c, y + 1, x + 1); // offset to stay in bounds of array
 		}
 	}
-	join_sectors(coord(0, 0),
-	            coord(0, 0),
-	            coord(0, 1));
-	join_sectors(coord(0, 0),
-	             coord(1, 0),
-	             coord(0, 1));
+	Coord cnk1, s1, cnk2, s2;
+	cnk1 = coord(0, 0);
+	cnk2 = coord(1, 0);
+	s1 = coord(0, 0);
+	s2 = coord(0, 1);
+	join_sectors(cnk1, s1, cnk2, s2);
+
+	cnk1 = coord(0, 0);
+	cnk2 = coord(0, 2);
+	s1 = coord(1, 0);
+	s2 = coord(0, 1);
+	join_sectors(cnk1, s1, cnk2, s2);
 }
