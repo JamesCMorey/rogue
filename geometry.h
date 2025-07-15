@@ -29,7 +29,8 @@ typedef enum {
 	UP=0,
 	RIGHT,
 	DOWN,
-	LEFT
+	LEFT,
+	DIR_COUNT
 } Direction;
 
 typedef struct Room Room;

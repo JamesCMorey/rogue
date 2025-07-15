@@ -18,113 +18,103 @@ Coord scn_point(Coord cnk, Coord sec, Coord pnt) {
 
 Coord scn_door_coord(Coord cnk, Coord sec, Direction dir) {
 	Sector *s = scn_sector(cnk, sec);
+
 	// find the scn coords for the pnt of the door pnt coords = (room  + door)
-	return scn_point(cnk, sec,
-	                 coord_add(coord(s->r.y, s->r.x), s->r.doors[dir]));
-}
+	Coord pnt = scn_point(cnk, sec, coord_add(coord(s->r.y, s->r.x), s->r.doors[dir]));
 
-Coord scn_start_coord(Coord cnk, Coord sec, Direction dir) {
-	Coord door = scn_door_coord(cnk, sec, dir);
 	switch (dir) {
 		case UP:
-			door = coord_add(door, coord(1, 0));
+			pnt = coord_add(pnt, coord(-1, 0));
 			break;
 		case RIGHT:
-			door = coord_add(door, coord(0, 1));
+			pnt = coord_add(pnt, coord(0, 1));
 			break;
 		case DOWN:
-			door = coord_add(door, coord(-1, 0));
+			pnt = coord_add(pnt, coord(1, 0));
 			break;
 		case LEFT:
-			door = coord_add(door, coord(0, -1));
+			pnt = coord_add(pnt, coord(0, -1));
 			break;
 	}
 
-	return door;
-}
-
-Coord scn_end_coord(Coord cnk, Coord sec, Direction dir) {
-	Coord door = scn_door_coord(cnk, sec, dir);
-	switch (dir) {
-		case UP:
-			door = coord_add(door, coord(-1, 0));
-			break;
-		case RIGHT:
-			door = coord_add(door, coord(0, 1));
-			break;
-		case DOWN:
-			door = coord_add(door, coord(1, 0));
-			break;
-		case LEFT:
-			door = coord_add(door, coord(0, -1));
-			break;
-	}
-
-	return door;
+	return pnt;
 }
 
 char *tile_at(Coord c) {
 	return &scn.tm[c.y][c.x];
 }
 
-bool in_room(Coord c, Coord cnk, Coord sec) {
-	Room *r = &scn_sector(cnk, sec)->r;
-	*tile_at(scn_point(cnk, sec, coord(r->y, r->x))) = '0';
-	*tile_at(scn_point(cnk, sec, coord(r->y + r->height - 1, r->x + r->width - 1))) = '0';
-	return coord_inside(c,
-	            scn_point(cnk, sec, coord(r->y, r->x)),
-		          // see draw_rect() for -1 explanation
-	            scn_point(cnk, sec, coord(r->y + r->height - 1, r->x + r->width - 1)));
+bool tile_clear(char *t) {
+	return *t == CO_EMPTY || *t == CO_HALL;
 }
 
-/*
+/* Connect two sectors within the same chunk by choosing a random door on each
+ * sector's room and then digging a hall between them.
+ *
  * Params:
- *	cnk is the chunk in which the sector resides
- *	s1 indexes of first sector
- *	s2 is the same
+ *  cnk: coords of the chunk
+ *	s1, s2: coords of sectors within that chunk
  * */
 void join_sectors(Coord cnk, Coord s1, Coord s2) {
-	Coord cur = scn_start_coord(cnk, s1, LEFT);
-	Coord tar = scn_end_coord(cnk, s2, LEFT);
-	Coord diff = coord_sub(tar, cur);
+	Coord cur = scn_door_coord(cnk, s1, random()%DIR_COUNT);
+	Coord tar = scn_door_coord(cnk, s2, random()%DIR_COUNT);
 
-	int cnt = 0;
-	int y = 0, x = 0;
-	while ((y != diff.y || x != diff.x) && cnt < 500) {
-		++cnt;
+	// Compute the distance of the y- and x-components between the doors
+	int diff[2] = {coord_sub(tar, cur).y, coord_sub(tar, cur).x};
+	int mvd[2] = { 0 }; // Store distance traveled from source door
 
-		// 1. either -1 or 1 depending on whether component is pos or neg
-		// 2. (-x/y) makes the direction of travel relative to the current position 
-		//        and not just the source
-		int x_dir = (diff.x - x) / abs(diff.x - x);
-		int y_dir = (diff.y - y) / abs(diff.y - y);
+	int prio = 0; // Directional priority: 0 = y, 1 = x
 
-		// step from cur in direction of target
-		Coord next_x = coord_add(cur, coord(0, x_dir));
-		Coord next_y = coord_add(cur, coord(y_dir, 0));
+	while (mvd[0] != diff[0] || mvd[1] != diff[1]) {
+		/* dir[i] is unit direction for the i axis. This is either -1, 0, or 1.
+		 * For example: dir[0] = -1 means move up; dir[1] = 1 means move right.
+		 *
+		 * The equation subtracts movement made along the axis so that the direction 
+		 * is relative to the current position and not a set point.
+		 * */
+		int dir[2] = {
+			(diff[0] - mvd[0]) / abs(diff[0] - mvd[0]),
+			(diff[1] - mvd[1]) / abs(diff[1] - mvd[1])
+		};
+
+		// next step along each axis
+		Coord next[2] = {
+			coord_add(cur, coord(dir[0], 0)),
+			coord_add(cur, coord(0, dir[1]))
+		};
  
-		/* Grab potential next tiles */
-		char *x_tile = tile_at(next_x);
-		char *y_tile = tile_at(next_y);
+		char *tile[2] = { tile_at(next[0]), tile_at(next[1]) };
 
-		/* Take a step to the right or left if possible */
-		if (x != diff.x && (*x_tile == CO_EMPTY || *x_tile == CO_HALL)) {
-			*x_tile = CO_HALL;
-			x += x_dir;
-			cur = next_x;
-		}
-		else if (*y_tile == CO_EMPTY || *y_tile == CO_HALL) {
-			/* If it's not possible, go up or down till it is. */
+		/* Try to move in current priority axis under the following conditions:
+		 * 1. the target hasn't been reached yet
+		 * 2. the next tile along that axis is open
+		 * 3. the step being taken along the axis will bring us closer to the target
+		 * 4. or, in lieu of 3., the other priority axis is currently stuck
+		 * */
+		if ((mvd[prio] != diff[prio] || mvd[!prio] != diff[!prio])
+			  && tile_clear(tile[prio])
+		    && (abs(diff[prio] - (mvd[prio] + dir[prio])) < abs(diff[prio] - mvd[prio])
+		    || !tile_clear(tile[!prio]))) {
+			int tmp[2] = { 0 };
 			do {
-				*y_tile = CO_HALL;
-				y += y_dir;
-				cur = next_y;
+				*tile[prio] = CO_HALL;
+				mvd[prio] += dir[prio];
+				cur = next[prio]; 
 
-				next_y = coord_add(cur, coord(y_dir, 0));
-				y_tile = tile_at(next_y);
-			} while ((x != diff.x || y != diff.y) // if either still needs fulfilling
-			          && *tile_at(coord_add(cur, coord(0, x_dir))) != CO_EMPTY);
+				tmp[0] = 0; tmp[1] = 0;
+				tmp[prio] = dir[prio];
+				next[prio] = coord_add(cur, coord(tmp[0], tmp[1]));
+				tile[prio] = tile_at(next[prio]);
+
+				// prepare for escape condition (target reached or other axis is free)
+				tmp[0] = 0; tmp[1] = 0;
+				tmp[!prio] = dir[!prio];
+			} while (!(mvd[prio] == diff[prio] && mvd[!prio] == diff[!prio])
+			          && !tile_clear(tile_at(coord_add(cur, coord(tmp[0], tmp[1])))));
 		}
+
+		// alternate axis 
+		prio = !prio;
 	}
 }
 
@@ -202,9 +192,9 @@ void scn_init() {
 		}
 	}
 	join_sectors(coord(0, 0),
-							coord(0, 0),
-							coord(0, 1));
-	// join_sectors(coord(0, 0),
-	// 						coord(1, 0),
-	// 						coord(0, 1));
+	            coord(0, 0),
+	            coord(0, 1));
+	join_sectors(coord(0, 0),
+	             coord(1, 0),
+	             coord(0, 1));
 }
