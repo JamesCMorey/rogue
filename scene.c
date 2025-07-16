@@ -70,15 +70,16 @@ void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
 	int prio = 0; // Directional priority: 0 = y, 1 = x
 
 	while (mvd[0] != diff[0] || mvd[1] != diff[1]) {
-		/* dir[i] is unit direction for the i axis. This is either -1, 0, or 1.
+		/* dir[i] is unit direction for the i axis. This is either -1 or 1.
 		 * For example: dir[0] = -1 means move up; dir[1] = 1 means move right.
 		 *
 		 * The equation subtracts movement made along the axis so that the direction 
 		 * is relative to the current position and not a set point.
 		 * */
+		int r = random()%2 ? -1 : 1;
 		int dir[2] = {
-			(diff[0] - mvd[0]) / abs(diff[0] - mvd[0]),
-			(diff[1] - mvd[1]) / abs(diff[1] - mvd[1])
+			diff[0] == mvd[0] ? r : (diff[0] - mvd[0]) / abs(diff[0] - mvd[0]),
+			diff[1] == mvd[1] ? r : (diff[1] - mvd[1]) / abs(diff[1] - mvd[1])
 		};
 
 		// next step along each axis
