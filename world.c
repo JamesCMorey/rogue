@@ -161,8 +161,17 @@ void sector_init(Sector *s) {
 
 	r->width = random() % 15 + 10;
 	r->height = random() % 5 + 10;
-	r->y = random()%(SECTOR_HEIGHT - r->height); 
-	r->x = random()%(SECTOR_WIDTH - r->width);
+
+	/* Room size should be reduced by one because if there is `room width` amount
+	 * of space left, there is still space for a room. Take one away and you can
+	 * no longer fit a room in the space left over.
+	 *
+	 * The -4+2 and -6+3 create a buffer zone so rooms cannot be generated at the
+	 * edge of the sector. This is necessary because otherwise it can cause
+	 * out-of-bounds pathing in join_sectors() when it tries to go around the room.
+	 * */
+	r->y = random()%(SECTOR_HEIGHT - (r->height - 1) - 4) + 2;
+	r->x = random()%(SECTOR_WIDTH - (r->width - 1) - 6) + 3;
 
 	r->onscreen = 1;
 	place_doors(r);
@@ -189,12 +198,6 @@ void world_init() {
 		} 
 	}
 	scn_init();
-	// join_sectors(0, 0, 0, 1); // just hardcode/try top left sectors for now
-
-	for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
-		wlog(scn.tm[i], CHUNK_WIDTH*3, sizeof(char));
-		plog("\n");
-	}
 }
 
 void doom_world(void *context) {

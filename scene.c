@@ -1,6 +1,7 @@
 #include "scene.h"
 #include "geometry.h"
 #include "world.h"
+#include "log.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -54,10 +55,6 @@ bool tile_clear(char *t) {
  * Params:
  *  cnk1, cnk2: coords of each chunk
  *	s1, s2: coords of sector within their respective chunk
- *
- *	TODO
- *	1. Fix infinite loop
- *	2. Fix random seg fault
  * */
 void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
 	Coord cur = scn_door_coord(cnk1, s1, random()%DIR_COUNT);
@@ -198,14 +195,19 @@ void scn_init() {
 	}
 	Coord cnk1, s1, cnk2, s2;
 	cnk1 = coord(0, 0);
-	cnk2 = coord(1, 0);
+	cnk2 = coord(0, 2);
 	s1 = coord(0, 0);
-	s2 = coord(0, 1);
+	s2 = coord(0, 2);
 	join_sectors(cnk1, s1, cnk2, s2);
 
 	cnk1 = coord(0, 0);
-	cnk2 = coord(0, 2);
+	cnk2 = coord(1, 2);
 	s1 = coord(1, 0);
-	s2 = coord(0, 1);
+	s2 = coord(0, 2);
 	join_sectors(cnk1, s1, cnk2, s2);
+
+	for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
+		log_raw(LOG_SCN, scn.tm[i], CHUNK_WIDTH*3, sizeof(char));
+		log_fmt(LOG_SCN, "\n");
+	}
 }
