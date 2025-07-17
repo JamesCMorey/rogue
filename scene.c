@@ -137,8 +137,55 @@ void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
 	}
 }
 
-void gen_halls(Chunk *c) {
-	return;
+/*
+ * TODO
+ * 1. Join across chunks
+ * 2. Make pathing more sane
+ * 3. Make all doors get used instead of random selection
+ * */
+void gen_halls(int cy, int cx) {
+	// modifiable copy
+	int tmp_cnt[3][3];
+	for (int y = 0; y < 3; ++y) {
+		for(int x = 0; x < 3; ++x) {
+			tmp_cnt[y][x] = scn.chunks[cy][cx]->sector_door_counts[y][x];
+			log_fmt(LOG_GEN, "tmp_cnt[%d][%d] = %d\n", y, x, tmp_cnt[y][x]);
+		}
+	}
+
+	// for each sector
+	for (int y = 0; y < 3; ++y) {
+		for (int x = 0; x < 3; ++x) {
+			// for each door
+			while (tmp_cnt[y][x] > 0) {
+
+				int ry, rx;
+				ry = rx = 0;
+				if (y == 2 && x == 2) {
+					rx = random()%3;
+					ry = random()%3;
+				}
+				else {
+					rx = random()%(3-x) + x;
+					ry = random()%(3-y) + y;
+				}
+
+				int abort = 0;
+				while (abort < 10 && ((rx == x && ry == y)
+				       || (tmp_cnt[ry][rx] == 0 && !(y == 2 && x == 2)))) {
+					rx = random()%(3-x) + x;
+					ry = random()%(3-y) + y;
+					++abort; // prevent infinite loop
+				}
+
+				join_sectors(coord(cy, cx), coord(y, x), coord(cy, cx), coord(ry, rx));
+				--tmp_cnt[y][x];
+				--tmp_cnt[ry][rx];
+			}
+			log_fmt(LOG_GEN, "tmp_cnt[%d][%d] = %d\n", y, x, tmp_cnt[y][x]);
+		}
+	}
+
 }
 
 /* Load a sector from the chunk references into the tilemap.
@@ -212,7 +259,8 @@ void scn_load_chunk(Chunk *c, int cy, int cx) {
 	}
 
 	// Draw halls in tilemap
-	//gen_halls(c);
+	if (cy == 0 && cx == 0)
+		gen_halls(cy, cx);
 }
 
 void scn_init() {
@@ -222,19 +270,8 @@ void scn_init() {
 			scn_load_chunk(c, y + 1, x + 1); // offset to stay in bounds of array
 		}
 	}
-	Coord cnk1, s1, cnk2, s2;
-	cnk1 = coord(0, 0);
-	cnk2 = coord(0, 2);
-	s1 = coord(0, 0);
-	s2 = coord(0, 2);
-	join_sectors(cnk1, s1, cnk2, s2);
 
-	cnk1 = coord(0, 0);
-	cnk2 = coord(1, 2);
-	s1 = coord(1, 0);
-	s2 = coord(0, 2);
-	join_sectors(cnk1, s1, cnk2, s2);
-
+	// log scene after init for debugging
 	for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
 		log_raw(LOG_SCN, scn.tm[i], CHUNK_WIDTH*3, sizeof(char));
 		log_fmt(LOG_SCN, "\n");

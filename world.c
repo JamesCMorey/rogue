@@ -206,6 +206,7 @@ void chunk_init(int cnk_y, int cnk_x) {
 	for (int y = 0; y < 3; ++y) {
 		for (int x = 0; x < 3; ++x) {
 			sector_init(&cnk->sectors[y][x]);
+			cnk->sector_door_counts[y][x] = cnk->sectors[y][x].r.door_num;
 		}
 	}
 }

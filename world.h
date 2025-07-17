@@ -28,6 +28,7 @@ typedef struct {
 
 typedef struct Chunk {
 	Sector sectors[3][3]; /* TODO: Make this dynamic / fit the screen */
+	int sector_door_counts[3][3];
 	int rng[15];
 	bool exists;
 } Chunk;
