@@ -116,8 +116,9 @@ int get_input() {
 
 int draw_rect(int y, int x, int height, int width) {
 	/* Explanation of Rect extents
+	 * br = bottom right tl = top left
 	 *
-	 * br needs -1 because of the following (borders included in dimensions):
+	 * br and tl need -1 due to the following (borders included in dimensions):
 	 * 
 	 * Imagine there was no -1 and we had a rect (2, 2) with a width 5.
 	 * 

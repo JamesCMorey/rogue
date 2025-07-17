@@ -124,40 +124,49 @@ void gen_halls(Chunk *c) {
 	return;
 }
 
-/* Load sector (specified by cnk and sec) from chunk references into tilemap */ 
+/* Load a sector from the chunk references into the tilemap.
+ * 
+ * Params:
+ *  cnk: coords for the chunk in scn.chunks
+ *  sec: coords for sector within specified chunk
+ *
+ * This function calculates the absolute tilemap position of the sector's 
+ * room before rendering its walls and doors into the scn.tm tilemap.
+ * (The responsibilities of this function may expand in the future)
+ * */
 void scn_load_sector(Coord cnk, Coord sec) {
 	Sector *s = scn_sector(cnk, sec);
 
-	// coords for room in tilemap
+	// Top-left corner of room in tilemap
 	Coord r = coord_add(chunk_offset(cnk.y, cnk.x),
 	          coord_add(sector_offset(sec.y, sec.x),
 	                    coord(s->r.y, s->r.x)));
 
-	// draw top and bottom walls of room
+	// Draw horizontal walls (top and bottom)
+  // see draw_rect() for -1 explanation
 	for (int x = 0; x < s->r.width; ++x) {
-		scn.tm[r.y][r.x + x] = CO_WALL; // top
-		// see draw_rect() for -1 explanation
-		scn.tm[r.y + s->r.height - 1][r.x + x] = CO_WALL; // bottom
+		scn.tm[r.y][r.x + x] = CO_WALL;                      // top
+		scn.tm[r.y + s->r.height - 1][r.x + x] = CO_WALL;    // bottom
 	}
 
-	// draw left and right walls of room
+	// Draw vertical walls (left and right)
 	for (int y = 0; y < s->r.height; ++y) {
-		scn.tm[r.y + y][r.x] = CO_WALL; // left
-		scn.tm[r.y + y][r.x + s->r.width - 1] = CO_WALL; // right
+		scn.tm[r.y + y][r.x] = CO_WALL;                      // left
+		scn.tm[r.y + y][r.x + s->r.width - 1] = CO_WALL;     // right
 	}
 
-	// draw doors
+	// Place doors on walls
 	for (int k = 0; k < 4; ++k) {
-		// coord of door in tilemap
 		Coord d = coord_add(r, s->r.doors[k]);
 
-		// place doors on room 
-		// 0, 2 -> up and down | 1, 3 -> right and left
+		// Horizontal doors: 0 (up) and 2 (down)
 		if (k % 2 == 0) {
 			scn.tm[d.y][d.x] =
 			scn.tm[d.y][d.x + 1] =
 			scn.tm[d.y][d.x + 2] = CO_CLOSED_DOOR;
-		} else {
+		}
+		// Vertical doors: 1 (right) and 3 (left)
+		else {
 			scn.tm[d.y][d.x] =
 			scn.tm[d.y + 1][d.x] = CO_CLOSED_DOOR;
 		}
