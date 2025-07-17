@@ -49,6 +49,20 @@ bool tile_clear(char *t) {
 	return *t == CO_EMPTY || *t == CO_HALL;
 }
 
+Direction random_door(Room *r) {
+	int door_chosen = (random()%r->door_num) + 1; // +1 so it's 1-4 and not 0-3
+
+	int doors_seen = 0;
+	int idx = -1;
+	while (doors_seen < door_chosen) {
+		++idx;
+		if (r->valid_doors[idx]) // put here so it leaves loop if room is found
+			++doors_seen;
+	}
+
+	return idx;
+}
+
 /* Connect two sectors within the same chunk by choosing a random door on each
  * sector's room and then digging a hall between them.
  *
@@ -57,8 +71,11 @@ bool tile_clear(char *t) {
  *	s1, s2: coords of sector within their respective chunk
  * */
 void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
-	Coord cur = scn_door_coord(cnk1, s1, random()%DIR_COUNT);
-	Coord tar = scn_door_coord(cnk2, s2, random()%DIR_COUNT);
+	Sector *s = scn_sector(cnk1, s1);
+	Coord cur = scn_door_coord(cnk1, s1, random_door(&s->r));
+
+	s = scn_sector(cnk2, s2);
+	Coord tar = scn_door_coord(cnk2, s2, random_door(&s->r));
 
 	// Compute the distance of the y- and x-components between the doors
 	int diff[2] = {coord_sub(tar, cur).y, coord_sub(tar, cur).x};
@@ -157,6 +174,9 @@ void scn_load_sector(Coord cnk, Coord sec) {
 
 	// Place doors on walls
 	for (int k = 0; k < 4; ++k) {
+		if (!s->r.valid_doors[k])
+			continue;
+
 		Coord d = coord_add(r, s->r.doors[k]);
 
 		// Horizontal doors: 0 (up) and 2 (down)
@@ -178,7 +198,7 @@ void scn_load_chunk(Chunk *c, int cy, int cx) {
 	// store reference
 	scn.chunks[cy][cx] = c;
 
-	// zero chunk in tilemap
+	// Clear chunk area in tilemap before drawing the chunk in it
 	for (int y = 0; y < CHUNK_HEIGHT; ++y) {
 		memset(&scn.tm[cy*CHUNK_HEIGHT + y][cx*CHUNK_WIDTH], CO_EMPTY, CHUNK_WIDTH);
 	}

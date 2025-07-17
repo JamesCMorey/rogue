@@ -17,6 +17,8 @@ typedef struct Room {
 	int width, height;
 	int onscreen;
 	Coord doors[4];
+	bool valid_doors[4];
+	int door_num;
 } Room;
 
 typedef struct {

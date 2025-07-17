@@ -31,10 +31,13 @@ void render_doors(int r_world_y, int r_world_x, Room *r) {
 	if (!r->onscreen)
 		return;
 
-	for (int k = 0; k < 4; ++k) {
-		Coord *d = &r->doors[k];
+	for (int i = 0; i < 4; ++i) {
+		if (!r->valid_doors[i]) 
+			continue;
 
-		if (k % 2 == 0) {
+		Coord *d = &r->doors[i];
+
+		if (i % 2 == 0) {
 			/* TODO: partial displays */
 			mvprintw(camy(r_world_y + d->y), camx(r_world_x + d->x), "+++"); 
 		} else {
@@ -126,32 +129,49 @@ LogicFrameAction simulate_world(void *context) {
 	return LFRAME_NOP;
 }
 
+void place_door(Room *r, Direction dir) {
+	switch(dir) {
+		case UP:
+			// +1 to make sure it's not on left edge
+			// -3 for length of door -1 for right edge
+			r->doors[dir].x = random()%(r->width - 3 - 1) + 1;
+			r->doors[dir].y = 0;
+			break;
+		case RIGHT:
+			r->doors[dir].x = r->width - 1; // see draw_rect() for -1 explanation
+			// +1 to make sure it's not on upper edge
+			// -2 for length of door -1 for bottom edge
+			r->doors[dir].y = random()%(r->height - 2 - 1) + 1;
+			break;
+		case DOWN:
+			r->doors[dir].x = random()%(r->width - 3 - 1) + 1;
+			r->doors[dir].y = r->height - 1; // see draw_rect() for -1 explanation
+			break;
+		case LEFT:
+			r->doors[dir].x = 0;
+			r->doors[dir].y = random()%(r->height - 2 - 1) + 1;
+			break;
+	}
+
+	++r->door_num;
+	r->valid_doors[dir] = true;
+}
+
 void place_doors(Room *r) {
-	for (int k = 0; k < 4; ++k) {
-		//if (random() % 3) {
-		switch(k) {
-			case 0: // above
-				// +1 to make sure it's not on left edge
-				// -3 for length of door -1 for right edge
-				r->doors[k].x = random()%(r->width - 3 - 1) + 1;
-				r->doors[k].y = 0;
-				break;
-			case 1: // right
-				r->doors[k].x = r->width - 1; // see draw_rect() for -1 explanation
-				// +1 to make sure it's not on upper edge
-				// -2 for length of door -1 for bottom edge
-				r->doors[k].y = random()%(r->height - 2 - 1) + 1;
-				break;
-			case 2: // below
-				r->doors[k].x = random()%(r->width - 3 - 1) + 1;
-				r->doors[k].y = r->height - 1;
-				break;
-			case 3: // left
-				r->doors[k].x = 0;
-				r->doors[k].y = random()%(r->height - 2 - 1) + 1;
-				break;
+	// initialize to proper values
+	r->door_num = 0;
+	for (Direction dir = 0; dir < DIR_COUNT; ++dir) {
+		r->valid_doors[dir] = false;
+	}
+
+	// guarantee at least one door on each room
+	Direction used = random()%DIR_COUNT;
+	place_door(r, used);
+
+	for (Direction dir = 0; dir < DIR_COUNT; ++dir) {
+		if (random()%3==0 && dir != used) { // 1/3 chance
+			place_door(r, dir);
 		}
-		//}
 	}
 }
 
