@@ -43,3 +43,7 @@ extern WorldData world;
 
 void world_load();
 void enter_world(void *context);
+
+static inline Coord cnk2idx(Coord cnk) {
+	return coord(cnk.y + WORLD_HEIGHT/2, cnk.x + WORLD_WIDTH/2);
+}

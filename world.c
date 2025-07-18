@@ -58,7 +58,8 @@ void render_chunk(int cy, int cx) {
 void render_world(void *context) {
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
-			render_chunk(y, x);
+			Coord pos = abs2cnk(world.player_coord);
+			render_chunk(pos.y + y, pos.x + x);
 		}
 	}
 
@@ -107,23 +108,6 @@ void handle_movement(char c) {
 		case 'n': move_player(1, 1); break;
 		default: break;
 	}
-}
-
-void chunk_auto_init(Coord old, Coord new) {
-	
-}
-
-LogicFrameAction simulate_world(void *context) {
-	char c = get_input();
-	if (c == 'q')
-		return LFRAME_EXIT;
-
-	Coord old = {world.player_coord.y, world.player_coord.x};
-	handle_movement(c);
-	Coord new = {world.player_coord.y, world.player_coord.x};
-	chunk_auto_init(old, new);
-	
-	return LFRAME_NOP;
 }
 
 void place_door(Room *r, Direction dir) {
@@ -195,7 +179,8 @@ void sector_init(Sector *s) {
 }
 
 void chunk_init(int cnk_y, int cnk_x) {
-	Chunk *cnk = &world.chunks[cnk_y + WORLD_HEIGHT/2][cnk_x + WORLD_WIDTH/2];
+	Coord idx = cnk2idx(coord(cnk_y, cnk_x));
+	Chunk *cnk = &world.chunks[idx.y][idx.x];
 
 	for (int y = 0; y < 3; ++y) {
 		for (int x = 0; x < 3; ++x) {
@@ -205,6 +190,44 @@ void chunk_init(int cnk_y, int cnk_x) {
 	}
 
 	cnk->initialized = true;
+}
+
+void chunk_auto_init(Coord old, Coord new) {
+	old = abs2cnk(old);
+	new = abs2cnk(new);
+ 
+	/* Movement did not cross chunk borders so do nothing */
+	if (old.y == new.y && old.x == new.x)
+		return;
+
+	for (int y = -1; y < 2; ++y) {
+		for (int x = -1; x < 2; ++x) {
+			// TODO: Fix the chunk coord and chunk array coord disconnect/confusion
+			Coord cnk = coord_add(new, coord(y, x));
+			Coord idx = cnk2idx(cnk);
+
+			if (world.chunks[idx.y][idx.x].initialized) 
+				continue;
+
+			chunk_init(cnk.y, cnk.x);
+		}
+	}
+}
+
+LogicFrameAction simulate_world(void *context) {
+	char c = get_input();
+	if (c == 'q')
+		return LFRAME_EXIT;
+
+	// store old and new absolute (y, x) of player
+	Coord old = {world.player_coord.y, world.player_coord.x};
+	handle_movement(c);
+	Coord new = {world.player_coord.y, world.player_coord.x};
+
+	// auto init chunks if the movement took them across chunk borders
+	chunk_auto_init(old, new);
+	
+	return LFRAME_NOP;
 }
 
 void world_init() {

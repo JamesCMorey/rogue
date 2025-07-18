@@ -60,6 +60,23 @@ static inline Coord sector_offset(int sy, int sx) {
 	return coord(sy*SECTOR_HEIGHT, sx*SECTOR_WIDTH);
 }
 
+/* Convert absolute (y, x) to cnk index (y, x). Example conversion for x using
+ * CHUNK_WIDTH=180:
+ * ...
+ * (-450, -270] -> -2
+ * (-270, -90] -> -1
+ * (-90, 90) -> 0
+ * [90, 270) -> 1
+ * [270, 360) -> 2
+ * ...
+ * */
+static inline Coord abs2cnk(Coord pnt) {
+	return coord(
+		(pnt.y > 0 ? pnt.y+(CHUNK_HEIGHT/2) : pnt.y-(CHUNK_HEIGHT/2))/CHUNK_HEIGHT,
+		(pnt.x > 0 ? pnt.x+(CHUNK_WIDTH/2) : pnt.x-(CHUNK_WIDTH/2))/CHUNK_WIDTH
+	);
+}
+
 // convert chunk, sector, and point indexes into an absolute (y, x)
 static inline Coord world_offset(Coord cnk, Coord sec, Coord pnt) {
 	return coord_add(chunk_offset(cnk.y, cnk.x),
