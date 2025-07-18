@@ -30,18 +30,13 @@ typedef struct Chunk {
 	Sector sectors[3][3]; /* TODO: Make this dynamic / fit the screen */
 	int sector_door_counts[3][3];
 	int rng[15];
-	bool exists;
+	bool initialized;
 } Chunk;
-
-/* Player within world */
-typedef struct Player {
-	int y, x;
-} Player;
 
 /* Global state of world */
 typedef struct WorldData {
 	Chunk chunks[WORLD_HEIGHT][WORLD_WIDTH];
-	Player player;
+	Coord player_coord;
 } WorldData; 
 
 extern WorldData world;

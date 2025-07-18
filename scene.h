@@ -4,12 +4,10 @@
 
 typedef struct Chunk Chunk;
 
-typedef struct View {
+typedef struct Scene {
 	char tm[CHUNK_HEIGHT*3][CHUNK_WIDTH*3]; // active tilemap
 	Chunk *chunks[3][3]; // chunk references
 } Scene;
-
-extern Scene scn;
 
 void scn_init();
 void scn_load_chunk(Chunk *c, int cy, int cx);

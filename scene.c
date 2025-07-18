@@ -185,7 +185,6 @@ void gen_halls(int cy, int cx) {
 			log_fmt(LOG_GEN, "tmp_cnt[%d][%d] = %d\n", y, x, tmp_cnt[y][x]);
 		}
 	}
-
 }
 
 /* Load a sector from the chunk references into the tilemap.
@@ -259,11 +258,12 @@ void scn_load_chunk(Chunk *c, int cy, int cx) {
 	}
 
 	// Draw halls in tilemap
-	if (cy == 0 && cx == 0)
-		gen_halls(cy, cx);
+	gen_halls(cy, cx);
 }
 
 void scn_init() {
+	// Load (0, 0) and surrounding chunks into scn because that's default for new
+	// worlds.
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
 			Chunk *c = &world.chunks[y + WORLD_HEIGHT/2][x + WORLD_WIDTH/2];
@@ -271,7 +271,8 @@ void scn_init() {
 		}
 	}
 
-	// log scene after init for debugging
+	// clear log and then log scene after init for debugging
+	log_clear(LOG_SCN);
 	for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
 		log_raw(LOG_SCN, scn.tm[i], CHUNK_WIDTH*3, sizeof(char));
 		log_fmt(LOG_SCN, "\n");

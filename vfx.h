@@ -2,8 +2,9 @@
 
 #include "evloop.h"
 
-#define camy(objy) ((objy) + maxy/2 - world.player.y)
-#define camx(objx) ((objx) + maxx/2 - world.player.x)
+// TODO: Generalize or move this
+#define camy(objy) ((objy) + maxy/2 - world.player_coord.y)
+#define camx(objx) ((objx) + maxx/2 - world.player_coord.x)
 
 void vfx_init();
 void vfx_teardown();

@@ -50,7 +50,6 @@ static inline Coord coord_sub(Coord a, Coord b) {
 /* Assume that tl is the top left (min y/x) and br is bottom right (max y/x) */
 static inline bool coord_inside(Coord a, Coord tl, Coord br) {
 	return (tl.y <= a.y && a.y < br.y) && (tl.x <= a.x && a.x <= br.x);
-	//return (br.y <= a.y && a.y <= tl.y) && (tl.x <= a.x && a.x <= br.x);
 }
 
 static inline Coord chunk_offset(int cy, int cx) {
@@ -61,13 +60,10 @@ static inline Coord sector_offset(int sy, int sx) {
 	return coord(sy*SECTOR_HEIGHT, sx*SECTOR_WIDTH);
 }
 
-static inline Coord world_offset(int cy, int cx, int sy, int sx, int y, int x) {
-	return coord_add(chunk_offset(cy, cx),
-	       coord_add(sector_offset(sy, sx),
-	       coord_add(coord(y, x),
-	                 coord(-(CHUNK_HEIGHT/2), -(CHUNK_WIDTH/2))))); // I think this may be getting used in an entirely visual manner
+// convert chunk, sector, and point indexes into an absolute (y, x)
+static inline Coord world_offset(Coord cnk, Coord sec, Coord pnt) {
+	return coord_add(chunk_offset(cnk.y, cnk.x),
+	       coord_add(sector_offset(sec.y, sec.x),
+	       coord_add(coord(pnt.y, pnt.x),
+	                 coord(-(CHUNK_HEIGHT/2), -(CHUNK_WIDTH/2)))));
 }
-
-// coords of arbitrary y/x within world using y/x of chunk, sector, and offset
-// #define world_y(cy, sy, y) ((cy*CHUNK_HEIGHT) + (sy*SECTOR_HEIGHT) + (y) - (CHUNK_HEIGHT/2))
-// #define world_x(cx, sx, x) ((cx*CHUNK_WIDTH) + (sx*SECTOR_WIDTH) + (x) - (CHUNK_WIDTH/2))

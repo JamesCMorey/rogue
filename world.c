@@ -10,19 +10,11 @@
 
 WorldData world;
 
-/* The following applies to all chunk functions (render_chunk, gen_chunk, etc.)
- *
- * Params: The parameters x and y will be the x and y in the world, so (0, 0)
- * corresponds to the chunk at (0, 0) in the world
- * */
-
 void render_chunkmap() { // TODO: Make this actually draw a chunkmap
-	for (int y = 0; y < 3; ++y) {
-		for (int x = 0; x < 3; ++x) {
-			Coord w = coord_add(chunk_offset(-1, -1),
-			          coord_add(sector_offset(y, x),
-			                    coord(1, 1)));
-			draw_rect(camy(w.y), camx(w.x), SECTOR_HEIGHT, SECTOR_WIDTH);
+	for (int y = -1; y < 2; ++y) {
+		for (int x = -1; x < 2; ++x) {
+			Coord tl = world_offset(coord(y, x), coord(0, 0), coord(0, 0));
+			draw_rect(camy(tl.y), camx(tl.x), CHUNK_HEIGHT, CHUNK_WIDTH);
 		}
 	}
 }
@@ -53,10 +45,8 @@ void render_chunk(int cy, int cx) {
 	for (int sy = 0; sy < 3; ++sy) {
 		for (int sx = 0; sx < 3; ++sx) {
 			Room *r = &cnk->sectors[sy][sx].r;
-			Coord w = world_offset(cy, cx, sy, sx, r->y, r->x);
+			Coord w = world_offset(coord(cy, cx), coord(sy, sx), coord(r->y, r->x));
 
-			// int r_world_y = world_y(cy, sy, r->y);
-			// int r_world_x = world_x(cx, sx, r->x);
 			r->onscreen = draw_rect(camy(w.y), camx(w.x),
 			                        r->height, r->width);
 
@@ -72,16 +62,16 @@ void render_world(void *context) {
 		}
 	}
 
-	//render_chunkmap();
+	render_chunkmap();
 	draw_rect(maxy/2, maxx/2, 2, 3); // visual square; logical nightmare
-	mvprintw(maxy - 1, 0, "y:%d, x:%d", world.player.y, world.player.x);
+	mvprintw(maxy - 1, 0, "y:%d, x:%d", world.player_coord.y, world.player_coord.x);
 }
 
 void move_player(int y, int x) {
 	int up, down, right, left;
 	up = down = right = left = 1;
 
-	Player *p = &world.player;
+	Coord *p = &world.player_coord;
 	// Room *r;
 	// for (int i = 0; i < world.room_num; ++i) {
 	// 	r = &world.chunks[50][50];
@@ -119,12 +109,19 @@ void handle_movement(char c) {
 	}
 }
 
+void chunk_auto_init(Coord old, Coord new) {
+	
+}
+
 LogicFrameAction simulate_world(void *context) {
 	char c = get_input();
 	if (c == 'q')
 		return LFRAME_EXIT;
 
+	Coord old = {world.player_coord.y, world.player_coord.x};
 	handle_movement(c);
+	Coord new = {world.player_coord.y, world.player_coord.x};
+	chunk_auto_init(old, new);
 	
 	return LFRAME_NOP;
 }
@@ -200,18 +197,23 @@ void sector_init(Sector *s) {
 void chunk_init(int cnk_y, int cnk_x) {
 	Chunk *cnk = &world.chunks[cnk_y + WORLD_HEIGHT/2][cnk_x + WORLD_WIDTH/2];
 
-	/* TODO: Make this switch out as player moves */
-	scn.chunks[cnk_y + 1][cnk_x + 1] = cnk;
-
 	for (int y = 0; y < 3; ++y) {
 		for (int x = 0; x < 3; ++x) {
 			sector_init(&cnk->sectors[y][x]);
 			cnk->sector_door_counts[y][x] = cnk->sectors[y][x].r.door_num;
 		}
 	}
+
+	cnk->initialized = true;
 }
 
 void world_init() {
+	for (int y = 0; y < WORLD_HEIGHT; ++y) {
+		for (int x = 0; x < WORLD_WIDTH; ++x) {
+			world.chunks[y][x].initialized = false;
+		}
+	}
+
 	/* Generate rooms */
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
@@ -226,8 +228,8 @@ void doom_world(void *context) {
 }
 
 void enter_world(void *context) {
-	world.player.x = 0;
-	world.player.y = 0;
+	world.player_coord.x = 0;
+	world.player_coord.y = 0;
 
 	world_init();
 	eventloop_enter(NULL, render_world, simulate_world, doom_world);
