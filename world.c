@@ -4,6 +4,7 @@
 #include "log.h"
 #include "geometry.h"
 #include "scene.h"
+#include "player.h"
 #include <stdlib.h>
 #include <ncurses.h>
 #include <string.h>
@@ -66,48 +67,6 @@ void render_world(void *context) {
 	render_chunkmap();
 	draw_rect(maxy/2, maxx/2, 2, 3); // visual square; logical nightmare
 	mvprintw(maxy - 1, 0, "y:%d, x:%d", world.player_coord.y, world.player_coord.x);
-}
-
-void move_player(int y, int x) {
-	int up, down, right, left;
-	up = down = right = left = 1;
-
-	Coord *p = &world.player_coord;
-	// Room *r;
-	// for (int i = 0; i < world.room_num; ++i) {
-	// 	r = &world.chunks[50][50];
-	// 	/* Check if on screen and in room */
-	// 	if (r->onscreen
-	// 			&& (r->world_x < p->x && p->x < r->width + r->world_x)
-	// 			&& (r->world_y < p->y && p->y < r->height + r->world_y)) {
-	// 		/* Check if next to wall */
-	// 		if (p->y + 1 == r->world_y + r->height - 1) down = 0;
-	// 		if (p->y - 1 == r->world_y) up = 0;
-	// 		if (p->x - 1 == r->world_x) left = 0;
-	// 		if (p->x + 1 == r->world_x + r->width - 2) right = 0;
-	// 	}
-	// }
-	//
-	// /* Move if allowed */
-	// if ((y > 0 && down) || (y < 0 && up)) p->y += y;
-	// if ((x > 0 && right) || (x < 0 && left)) p->x += x;
-	p->y += y;
-	p->x += x;
-}
-
-void handle_movement(char c) {
-	switch(c) {
-		case 'k': case 'w': move_player(-1, 0); break;
-		case 'h': case 'a': move_player(0, -1); break;
-		case 'j': case 's': move_player(1, 0); break;
-		case 'l': case 'd': move_player(0, 1); break;
-
-		case 'y': move_player(-1, -1); break;
-		case 'u': move_player(-1, 1); break;
-		case 'b': move_player(1, -1); break;
-		case 'n': move_player(1, 1); break;
-		default: break;
-	}
 }
 
 void place_door(Room *r, Direction dir) {
@@ -214,22 +173,6 @@ void chunk_auto_init(Coord old, Coord new) {
 	}
 }
 
-LogicFrameAction simulate_world(void *context) {
-	char c = get_input();
-	if (c == 'q')
-		return LFRAME_EXIT;
-
-	// store old and new absolute (y, x) of player
-	Coord old = {world.player_coord.y, world.player_coord.x};
-	handle_movement(c);
-	Coord new = {world.player_coord.y, world.player_coord.x};
-
-	// auto init chunks if the movement took them across chunk borders
-	chunk_auto_init(old, new);
-	
-	return LFRAME_NOP;
-}
-
 void world_init() {
 	for (int y = 0; y < WORLD_HEIGHT; ++y) {
 		for (int x = 0; x < WORLD_WIDTH; ++x) {
@@ -244,6 +187,21 @@ void world_init() {
 		} 
 	}
 	scn_init();
+}
+
+LogicFrameAction simulate_world(void *context) {
+	char c = get_input();
+	if (c == 'q')
+		return LFRAME_EXIT;
+
+	// auto initialize chunks if player crossed chunk borders
+	Coord old = world.player_coord;
+	Coord new = coord_add(old, handle_movement(c));
+	chunk_auto_init(old, new);
+	
+	world.player_coord = new;
+
+	return LFRAME_NOP;
 }
 
 void doom_world(void *context) {

@@ -21,7 +21,7 @@
 #define WORLD_WIDTH 100
 #define WORLD_HEIGHT 100
 
-typedef struct {
+typedef struct Coord {
 	int y, x;
 } Coord;
 
