@@ -5,7 +5,7 @@
 /* Chunk vs. Sector
  * A sector is a the smallest measured zone that is used to separate space and
  * generate rooms (a sector can either have a room or not). A chunk is made up
- * of sectors and is used for swapping in and out of the 2d-array used for 
+ * of sectors and is used for swapping in and out of the 2d-array used for
  * rendering and simulation.
  * */
 

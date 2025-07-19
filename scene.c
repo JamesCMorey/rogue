@@ -66,11 +66,12 @@ Direction random_door(Room *r) {
 	return idx;
 }
 
-/* Connect two sectors within the same chunk by choosing a random door on each
- * sector's room and then digging a hall between them.
+/* Connect two sectors in scn by choosing a random door on each
+ * sector's room and then digging a hall between them. The sectors can belong
+ * to different chunks.
  *
  * Params:
- *  cnk1, cnk2: coords of each chunk
+ *  cnk1, cnk2: coords of each chunk in scn
  *	s1, s2: coords of sector within their respective chunk
  * */
 void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
@@ -90,7 +91,7 @@ void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
 		/* dir[i] is unit direction for the i axis. This is either -1 or 1.
 		 * For example: dir[0] = -1 means move up; dir[1] = 1 means move right.
 		 *
-		 * The equation subtracts movement made along the axis so that the direction 
+		 * The equation subtracts movement made along the axis so that the direction
 		 * is relative to the current position and not a set point.
 		 * */
 		int r = random()%2 ? -1 : 1;
@@ -104,7 +105,7 @@ void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
 			coord_add(cur, coord(dir[0], 0)),
 			coord_add(cur, coord(0, dir[1]))
 		};
- 
+
 		char *tile[2] = { tile_at(next[0]), tile_at(next[1]) };
 
 		/* Try to move in current priority axis under the following conditions:
@@ -121,7 +122,7 @@ void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
 			do {
 				*tile[prio] = CO_HALL;
 				mvd[prio] += dir[prio];
-				cur = next[prio]; 
+				cur = next[prio];
 
 				tmp[0] = 0; tmp[1] = 0;
 				tmp[prio] = dir[prio];
@@ -135,7 +136,7 @@ void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
 			          && !tile_clear(tile_at(coord_add(cur, coord(tmp[0], tmp[1])))));
 		}
 
-		// alternate axis 
+		// alternate axis
 		prio = !prio;
 	}
 }
@@ -189,12 +190,12 @@ void gen_halls(int cy, int cx) {
 }
 
 /* Load a sector from the chunk references into the tilemap.
- * 
+ *
  * Params:
  *  cnk: coords for the chunk in scn.chunks
  *  sec: coords for sector within specified chunk
  *
- * This function calculates the absolute tilemap position of the sector's 
+ * This function calculates the absolute tilemap position of the sector's
  * room before rendering its walls and doors into the scn.tm tilemap.
  * (The responsibilities of this function may expand in the future)
  * */
@@ -262,30 +263,48 @@ void scn_load_chunk(Chunk *c, int cy, int cx) {
 	gen_halls(cy, cx);
 }
 
-void scn_init() {
-	// Load (0, 0) and surrounding chunks into scn because that's default for new
-	// worlds.
+void scn_load(bool force_load) {
+	if (!pl_get_changed_cnk() && !force_load)
+		return;
+
+	log_fmt(LOG_DEBUG, "Loading scene\n");
+
+	// TODO: Fix OOB access that loops like this could cause
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
-			Chunk *c = &world.chunks[y + WORLD_HEIGHT/2][x + WORLD_WIDTH/2];
+			// load player and surrounding chunks
+			Coord idx = cnk2idx(coord_add(pl_get_cnk(), coord(y, x)));
+			Chunk *c = &world.chunks[idx.y][idx.x];
 			scn_load_chunk(c, y + 1, x + 1); // offset to stay in bounds of array
 		}
 	}
 
-	// clear log and then log scene after init for debugging
-	log_clear(LOG_SCN);
-	for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
-		log_raw(LOG_SCN, scn.tm[i], CHUNK_WIDTH*3, sizeof(char));
-		log_fmt(LOG_SCN, "\n");
+	if (force_load) {
+		// clear log and then log scene after init for debugging
+		log_clear(LOG_SCN);
+		for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
+			log_raw(LOG_SCN, scn.tm[i], CHUNK_WIDTH*3, sizeof(char));
+			log_fmt(LOG_SCN, "\n");
+		}
 	}
+	else {
+		// clear log and then log scene after init for debugging
+		log_clear(LOG_GEN);
+		for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
+			log_raw(LOG_GEN, scn.tm[i], CHUNK_WIDTH*3, sizeof(char));
+			log_fmt(LOG_GEN, "\n");
+		}
+	}
+}
 
-	scn.player_pos = coord(0, 0);
+void scn_init() {
+	scn_load(true);
 }
 
 void scn_update(PlayerAction act) {
 	switch (act.type) {
 		case PL_MOVE:
-			scn.player_pos = coord_add(scn.player_pos, act.movement);
+			scn_load(false);
 			break;
 		default:
 			break;

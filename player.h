@@ -4,8 +4,8 @@
 
 /* Player within world */
 typedef struct Player {
-	Coord abs_pos;
-	Coord cnk_pos;
+	Coord abs_pos;    // absolute (y, x) in the world
+	Coord cnk_pos;    // coord of chunk in which the player currently resides
 	bool changed_cnk; // true if last move made player cross chunk borders
 } Player;
 

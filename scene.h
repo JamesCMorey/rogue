@@ -8,7 +8,7 @@ typedef struct Chunk Chunk;
 typedef struct Scene {
 	char tm[CHUNK_HEIGHT*3][CHUNK_WIDTH*3]; // active tilemap
 	Chunk *chunks[3][3];                    // chunk references
-	Coord player_pos;                       // player (y, x) in center chunk
+	Coord chunk_center;                     // chunk coord of center chunk
 } Scene;
 
 void scn_init();

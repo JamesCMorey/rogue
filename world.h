@@ -26,10 +26,15 @@ typedef struct {
 	Room r;
 } Sector;
 
+
+#define CNK_RNG_CNT 15
+
 typedef struct Chunk {
 	Sector sectors[3][3]; /* TODO: Make this dynamic / fit the screen */
 	int sector_door_counts[3][3];
-	int rng[15];
+	int rng[CNK_RNG_CNT];
+	int rng_itr;
+	bool rng_full;
 	bool initialized;
 } Chunk;
 
@@ -37,7 +42,7 @@ typedef struct Chunk {
 typedef struct WorldData {
 	Chunk chunks[WORLD_HEIGHT][WORLD_WIDTH];
 	Coord player_coord;
-} WorldData; 
+} WorldData;
 
 extern WorldData world;
 
@@ -47,3 +52,6 @@ void enter_world(void *context);
 static inline Coord cnk2idx(Coord cnk) {
 	return coord(cnk.y + WORLD_HEIGHT/2, cnk.x + WORLD_WIDTH/2);
 }
+
+Chunk *world_get_cnk(Coord cnk);
+int chunk_random(Chunk *cnk);

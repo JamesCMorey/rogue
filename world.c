@@ -154,6 +154,8 @@ void chunk_init(int cnk_y, int cnk_x) {
 	}
 
 	cnk->initialized = true;
+	cnk->rng_full = false;
+	cnk->rng_itr = 0;
 }
 
 void chunk_auto_init() {
@@ -200,10 +202,9 @@ LogicFrameAction simulate_world(void *context) {
 	handle_movement(c);
 	chunk_auto_init();
 
-	// PlayerAction act;
-	// act.type = PL_MOVE;
-	// act.movement = new;
-	// scn_update(act);
+	PlayerAction act;
+	act.type = PL_MOVE;
+	scn_update(act);
 
 	return LFRAME_NOP;
 }
@@ -213,9 +214,26 @@ void doom_world(void *context) {
 }
 
 void enter_world(void *context) {
-	// world.player_coord.x = 0;
-	// world.player_coord.y = 0;
-
 	world_init();
 	eventloop_enter(NULL, render_world, simulate_world, doom_world);
+}
+
+int chunk_random(Chunk *cnk) {
+	int r;
+
+	if (cnk->rng_full) {
+		r = cnk->rng[cnk->rng_itr++];
+	} else {
+		r = random();
+		cnk->rng[cnk->rng_itr++] = r;
+	}
+
+	if (cnk->rng_itr >= CNK_RNG_CNT)
+		cnk->rng_itr = 0;
+
+	return r;
+}
+
+Chunk *world_get_cnk(Coord cnk) {
+	return &world.chunks[cnk.y][cnk.x];
 }
