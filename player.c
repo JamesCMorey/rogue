@@ -1,7 +1,21 @@
 #include "player.h"
 #include "geometry.h"
 
-Coord move_player(int y, int x) {
+static Player player;
+
+void pl_changed_cnk(Coord old) {
+	old = abs2cnk(old);
+	Coord new = abs2cnk(pl_get_abs());
+
+	if (old.y == new.y && old.x == new.x) {
+		player.changed_cnk = false;
+		return;
+	}
+
+	player.changed_cnk = true;
+}
+
+void move_player(int y, int x) {
 	int up, down, right, left;
 	up = down = right = left = 1;
 	// Room *r;
@@ -24,20 +38,36 @@ Coord move_player(int y, int x) {
 	// if ((x > 0 && right) || (x < 0 && left)) p->x += x;
 	// p->y += y;
 	// p->x += x;
-	return coord(y, x);
+
+	Coord old = pl_get_abs(); //world.player_coord;
+	pl_set_abs(coord_add(player.abs_pos, coord(y, x)));
+	pl_changed_cnk(old);
 }
 
-Coord handle_movement(char c) {
+void handle_movement(char c) {
 	switch(c) {
-		case 'k': case 'w': return move_player(-1, 0); break;
-		case 'h': case 'a': return move_player(0, -1); break;
-		case 'j': case 's': return move_player(1, 0); break;
-		case 'l': case 'd': return move_player(0, 1); break;
+		case 'k': case 'w': move_player(-1, 0); break;
+		case 'h': case 'a': move_player(0, -1); break;
+		case 'j': case 's': move_player(1, 0); break;
+		case 'l': case 'd': move_player(0, 1); break;
 
-		case 'y': return move_player(-1, -1); break;
-		case 'u': return move_player(-1, 1); break;
-		case 'b': return move_player(1, -1); break;
-		case 'n': return move_player(1, 1); break;
-		default: return coord(0, 0); break;
+		case 'y': move_player(-1, -1); break;
+		case 'u': move_player(-1, 1); break;
+		case 'b': move_player(1, -1); break;
+		case 'n': move_player(1, 1); break;
+		default: break;
 	}
 }
+
+void pl_set_cnk(Coord cnk) {
+	player.abs_pos = world_offset(cnk, coord(0, 0), coord(0, 0));
+	player.cnk_pos = cnk;
+}
+void pl_set_abs(Coord pos) {
+	player.abs_pos = pos;
+	player.cnk_pos = abs2cnk(pos);
+}
+
+Coord pl_get_cnk() { return player.cnk_pos; }
+Coord pl_get_abs() { return player.abs_pos; }
+bool pl_get_changed_cnk() { return player.changed_cnk; }

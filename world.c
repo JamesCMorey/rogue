@@ -15,7 +15,8 @@ void render_chunkmap() { // TODO: Make this actually draw a chunkmap
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
 			Coord tl = world_offset(coord(y, x), coord(0, 0), coord(0, 0));
-			draw_rect(camy(tl.y), camx(tl.x), CHUNK_HEIGHT, CHUNK_WIDTH);
+			Coord cam = cam_coord(tl);
+			draw_rect(cam.y, cam.x, CHUNK_HEIGHT, CHUNK_WIDTH);
 		}
 	}
 }
@@ -25,17 +26,18 @@ void render_doors(int r_world_y, int r_world_x, Room *r) {
 		return;
 
 	for (int i = 0; i < 4; ++i) {
-		if (!r->valid_doors[i]) 
+		if (!r->valid_doors[i])
 			continue;
 
 		Coord *d = &r->doors[i];
 
+		Coord cam = cam_coord(coord(r_world_y + d->y, r_world_x + d->x));
 		if (i % 2 == 0) {
 			/* TODO: partial displays */
-			mvprintw(camy(r_world_y + d->y), camx(r_world_x + d->x), "+++"); 
+			mvprintw(cam.y, cam.x, "+++");
 		} else {
-			mvprintw(camy(r_world_y + d->y), camx(r_world_x + d->x), "+");
-			mvprintw(camy(r_world_y + d->y + 1), camx(r_world_x + d->x), "+");
+			mvprintw(cam.y, cam.x, "+");
+			mvprintw(cam.y + 1, cam.x, "+");
 		}
 	}
 }
@@ -48,7 +50,8 @@ void render_chunk(int cy, int cx) {
 			Room *r = &cnk->sectors[sy][sx].r;
 			Coord w = world_offset(coord(cy, cx), coord(sy, sx), coord(r->y, r->x));
 
-			r->onscreen = draw_rect(camy(w.y), camx(w.x),
+			Coord cam = cam_coord(coord(w.y, w.x));
+			r->onscreen = draw_rect(cam.y, cam.x,
 			                        r->height, r->width);
 
 			render_doors(w.y, w.x, r);
@@ -59,14 +62,14 @@ void render_chunk(int cy, int cx) {
 void render_world(void *context) {
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
-			Coord pos = abs2cnk(world.player_coord);
+			Coord pos = abs2cnk(pl_get_abs());
 			render_chunk(pos.y + y, pos.x + x);
 		}
 	}
 
 	render_chunkmap();
 	draw_rect(maxy/2, maxx/2, 2, 3); // visual square; logical nightmare
-	mvprintw(maxy - 1, 0, "y:%d, x:%d", world.player_coord.y, world.player_coord.x);
+	mvprintw(maxy - 1, 0, "y:%d, x:%d", pl_get_abs().y, pl_get_abs().x);
 }
 
 void place_door(Room *r, Direction dir) {
@@ -90,6 +93,8 @@ void place_door(Room *r, Direction dir) {
 		case LEFT:
 			r->doors[dir].x = 0;
 			r->doors[dir].y = random()%(r->height - 2 - 1) + 1;
+			break;
+		default:
 			break;
 	}
 
@@ -151,21 +156,17 @@ void chunk_init(int cnk_y, int cnk_x) {
 	cnk->initialized = true;
 }
 
-void chunk_auto_init(Coord old, Coord new) {
-	old = abs2cnk(old);
-	new = abs2cnk(new);
- 
-	/* Movement did not cross chunk borders so do nothing */
-	if (old.y == new.y && old.x == new.x)
+void chunk_auto_init() {
+	if (!pl_get_changed_cnk())
 		return;
 
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
 			// TODO: Fix the chunk coord and chunk array coord disconnect/confusion
-			Coord cnk = coord_add(new, coord(y, x));
+			Coord cnk = coord_add(pl_get_cnk(), coord(y, x));
 			Coord idx = cnk2idx(cnk);
 
-			if (world.chunks[idx.y][idx.x].initialized) 
+			if (world.chunks[idx.y][idx.x].initialized)
 				continue;
 
 			chunk_init(cnk.y, cnk.x);
@@ -184,9 +185,11 @@ void world_init() {
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
 			chunk_init(y, x);
-		} 
+		}
 	}
+
 	scn_init();
+	pl_set_abs(coord(0, 0));
 }
 
 LogicFrameAction simulate_world(void *context) {
@@ -194,12 +197,13 @@ LogicFrameAction simulate_world(void *context) {
 	if (c == 'q')
 		return LFRAME_EXIT;
 
-	// auto initialize chunks if player crossed chunk borders
-	Coord old = world.player_coord;
-	Coord new = coord_add(old, handle_movement(c));
-	chunk_auto_init(old, new);
-	
-	world.player_coord = new;
+	handle_movement(c);
+	chunk_auto_init();
+
+	// PlayerAction act;
+	// act.type = PL_MOVE;
+	// act.movement = new;
+	// scn_update(act);
 
 	return LFRAME_NOP;
 }
@@ -209,8 +213,8 @@ void doom_world(void *context) {
 }
 
 void enter_world(void *context) {
-	world.player_coord.x = 0;
-	world.player_coord.y = 0;
+	// world.player_coord.x = 0;
+	// world.player_coord.y = 0;
 
 	world_init();
 	eventloop_enter(NULL, render_world, simulate_world, doom_world);

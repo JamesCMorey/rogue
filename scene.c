@@ -2,6 +2,7 @@
 #include "geometry.h"
 #include "world.h"
 #include "log.h"
+#include "player.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -35,6 +36,8 @@ Coord scn_door_coord(Coord cnk, Coord sec, Direction dir) {
 			break;
 		case LEFT:
 			pnt = coord_add(pnt, coord(0, -1));
+			break;
+		default:
 			break;
 	}
 
@@ -149,7 +152,6 @@ void gen_halls(int cy, int cx) {
 	for (int y = 0; y < 3; ++y) {
 		for(int x = 0; x < 3; ++x) {
 			tmp_cnt[y][x] = scn.chunks[cy][cx]->sector_door_counts[y][x];
-			log_fmt(LOG_GEN, "tmp_cnt[%d][%d] = %d\n", y, x, tmp_cnt[y][x]);
 		}
 	}
 
@@ -182,7 +184,6 @@ void gen_halls(int cy, int cx) {
 				--tmp_cnt[y][x];
 				--tmp_cnt[ry][rx];
 			}
-			log_fmt(LOG_GEN, "tmp_cnt[%d][%d] = %d\n", y, x, tmp_cnt[y][x]);
 		}
 	}
 }
@@ -276,5 +277,17 @@ void scn_init() {
 	for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
 		log_raw(LOG_SCN, scn.tm[i], CHUNK_WIDTH*3, sizeof(char));
 		log_fmt(LOG_SCN, "\n");
+	}
+
+	scn.player_pos = coord(0, 0);
+}
+
+void scn_update(PlayerAction act) {
+	switch (act.type) {
+		case PL_MOVE:
+			scn.player_pos = coord_add(scn.player_pos, act.movement);
+			break;
+		default:
+			break;
 	}
 }

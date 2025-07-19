@@ -1,10 +1,30 @@
 #pragma once
 
-typedef struct Coord Coord;
+#include "geometry.h"
 
 /* Player within world */
 typedef struct Player {
-	int y, x;
+	Coord abs_pos;
+	Coord cnk_pos;
+	bool changed_cnk; // true if last move made player cross chunk borders
 } Player;
 
-Coord handle_movement(char c);
+typedef enum ActionType {
+	PL_MOVE,
+	PL_ATTACK,
+	PL_PICKUP
+} ActionType;
+
+typedef struct PlayerAction {
+	ActionType type;
+	Coord movement;
+
+} PlayerAction;
+
+void handle_movement(char c);
+
+void pl_set_cnk(Coord pos);
+void pl_set_abs(Coord pos);
+Coord pl_get_cnk();
+Coord pl_get_abs();
+bool pl_get_changed_cnk();
