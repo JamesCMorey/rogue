@@ -55,3 +55,4 @@ static inline Coord cnk2idx(Coord cnk) {
 
 Chunk *world_get_cnk(Coord cnk);
 int chunk_random(Chunk *cnk);
+void chunk_reset_random(Chunk *cnk);

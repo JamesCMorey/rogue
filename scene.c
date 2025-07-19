@@ -52,8 +52,9 @@ bool tile_clear(char *t) {
 	return *t == CO_EMPTY || *t == CO_HALL;
 }
 
-Direction random_door(Room *r) {
-	int door_chosen = (random()%r->door_num) + 1; // +1 so it's 1-4 and not 0-3
+Direction random_door(Coord cnk, Room *r) {
+	int rand = chunk_random(scn.chunks[cnk.y][cnk.x]);
+	int door_chosen = (rand%r->door_num) + 1; // +1 so it's 1-4 and not 0-3
 
 	int doors_seen = 0;
 	int idx = -1;
@@ -76,10 +77,10 @@ Direction random_door(Room *r) {
  * */
 void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
 	Sector *s = scn_sector(cnk1, s1);
-	Coord cur = scn_door_coord(cnk1, s1, random_door(&s->r));
+	Coord cur = scn_door_coord(cnk1, s1, random_door(cnk1, &s->r));
 
 	s = scn_sector(cnk2, s2);
-	Coord tar = scn_door_coord(cnk2, s2, random_door(&s->r));
+	Coord tar = scn_door_coord(cnk2, s2, random_door(cnk2, &s->r));
 
 	// Compute the distance of the y- and x-components between the doors
 	int diff[2] = {coord_sub(tar, cur).y, coord_sub(tar, cur).x};
@@ -94,10 +95,11 @@ void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
 		 * The equation subtracts movement made along the axis so that the direction
 		 * is relative to the current position and not a set point.
 		 * */
-		int r = random()%2 ? -1 : 1;
+		int r1 = chunk_random(scn.chunks[cnk1.y][cnk1.x])%2 ? -1 : 1;
+		int r2 = chunk_random(scn.chunks[cnk2.y][cnk2.x])%2 ? -1 : 1;
 		int dir[2] = {
-			diff[0] == mvd[0] ? r : (diff[0] - mvd[0]) / abs(diff[0] - mvd[0]),
-			diff[1] == mvd[1] ? r : (diff[1] - mvd[1]) / abs(diff[1] - mvd[1])
+			diff[0] == mvd[0] ? r1 : (diff[0] - mvd[0]) / abs(diff[0] - mvd[0]),
+			diff[1] == mvd[1] ? r2 : (diff[1] - mvd[1]) / abs(diff[1] - mvd[1])
 		};
 
 		// next step along each axis
@@ -148,6 +150,11 @@ void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
  * 3. Make all doors get used instead of random selection
  * */
 void gen_halls(int cy, int cx) {
+	/* reset rng array of both chunk to start of array so each time this function
+	 * is called, it creates the same 'random' output.
+	 * */
+	chunk_reset_random(scn.chunks[cy][cx]);
+
 	// modifiable copy
 	int tmp_cnt[3][3];
 	for (int y = 0; y < 3; ++y) {
@@ -164,20 +171,22 @@ void gen_halls(int cy, int cx) {
 
 				int ry, rx;
 				ry = rx = 0;
+				int rand = chunk_random(scn.chunks[cy][cx]);
 				if (y == 2 && x == 2) {
-					rx = random()%3;
-					ry = random()%3;
+					rx = rand%3;
+					ry = rand%3;
 				}
 				else {
-					rx = random()%(3-x) + x;
-					ry = random()%(3-y) + y;
+					rx = rand%(3-x) + x;
+					ry = rand%(3-y) + y;
 				}
 
 				int abort = 0;
 				while (abort < 10 && ((rx == x && ry == y)
 				       || (tmp_cnt[ry][rx] == 0 && !(y == 2 && x == 2)))) {
-					rx = random()%(3-x) + x;
-					ry = random()%(3-y) + y;
+					rand = chunk_random(scn.chunks[cy][cx]);
+					rx = rand%(3-x) + x;
+					ry = rand%(3-y) + y;
 					++abort; // prevent infinite loop
 				}
 
@@ -266,8 +275,6 @@ void scn_load_chunk(Chunk *c, int cy, int cx) {
 void scn_load(bool force_load) {
 	if (!pl_get_changed_cnk() && !force_load)
 		return;
-
-	log_fmt(LOG_DEBUG, "Loading scene\n");
 
 	// TODO: Fix OOB access that loops like this could cause
 	for (int y = -1; y < 2; ++y) {

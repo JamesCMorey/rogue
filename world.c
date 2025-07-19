@@ -218,6 +218,10 @@ void enter_world(void *context) {
 	eventloop_enter(NULL, render_world, simulate_world, doom_world);
 }
 
+void chunk_reset_random(Chunk *cnk) {
+	cnk->rng_itr = 0;
+}
+
 int chunk_random(Chunk *cnk) {
 	int r;
 
@@ -228,8 +232,10 @@ int chunk_random(Chunk *cnk) {
 		cnk->rng[cnk->rng_itr++] = r;
 	}
 
-	if (cnk->rng_itr >= CNK_RNG_CNT)
+	if (cnk->rng_itr >= CNK_RNG_CNT) {
 		cnk->rng_itr = 0;
+		cnk->rng_full = true;
+	}
 
 	return r;
 }
