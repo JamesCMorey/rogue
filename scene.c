@@ -7,17 +7,24 @@
 #include <string.h>
 #include <stdlib.h>
 
-Sector *scn_sector(Scene *scn, Coord cnk, Coord sec) {
+// ------ Tile Utilities ------
+
+static char *tile_at(Scene *scn, Coord c) { return &scn->tm[c.y][c.x]; }
+static bool tile_clear(char *t) { return *t == CO_EMPTY || *t == CO_HALL; }
+
+// ------  Sector/Room Access ------
+
+static Sector *scn_sector(Scene *scn, Coord cnk, Coord sec) {
 	return &scn->chunks[cnk.y][cnk.x]->sectors[sec.y][sec.x];
 }
 
-Coord scn_point(Coord cnk, Coord sec, Coord pnt) {
+static Coord scn_point(Coord cnk, Coord sec, Coord pnt) {
 	return coord_add(chunk_offset(cnk.y, cnk.x),
 	       coord_add(sector_offset(sec.y, sec.x),
 	                 pnt));
 }
 
-Coord scn_door_coord(Scene *scn, Coord cnk, Coord sec, Direction dir) {
+static Coord scn_door_coord(Scene *scn, Coord cnk, Coord sec, Direction dir) {
 	Sector *s = scn_sector(scn, cnk, sec);
 
 	// find the scn coords for the pnt of the door pnt coords = (room  + door)
@@ -43,15 +50,7 @@ Coord scn_door_coord(Scene *scn, Coord cnk, Coord sec, Direction dir) {
 	return pnt;
 }
 
-char *tile_at(Scene *scn, Coord c) {
-	return &scn->tm[c.y][c.x];
-}
-
-bool tile_clear(char *t) {
-	return *t == CO_EMPTY || *t == CO_HALL;
-}
-
-Direction random_door(Scene *scn, Coord cnk, Room *r) {
+static Direction random_door(Scene *scn, Coord cnk, Room *r) {
 	int rand = chunk_random(scn->chunks[cnk.y][cnk.x]);
 	int door_chosen = (rand%r->door_num) + 1; // +1 so it's 1-4 and not 0-3
 
@@ -65,6 +64,8 @@ Direction random_door(Scene *scn, Coord cnk, Room *r) {
 
 	return idx;
 }
+
+// ------ Hall Generation ------
 
 /* Connect two sectors in scn by choosing a random door on each
  * sector's room and then digging a hall between them. The sectors can belong
@@ -197,6 +198,8 @@ void gen_halls(Scene *scn, int cy, int cx) {
 	}
 }
 
+// ------- Scene Loading ------
+
 /* Load a sector from the chunk references into the tilemap.
  *
  * Params:
@@ -285,28 +288,14 @@ void scn_load(GameState *gs, bool force_load) {
 			scn_load_chunk(&gs->scene, c, y + 1, x + 1); // offset to stay in bounds of array
 		}
 	}
-
-	if (force_load) {
-		// clear log and then log scene after init for debugging
-		log_clear(LOG_SCN);
-		for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
-			log_raw(LOG_SCN, gs->scene.tm[i], CHUNK_WIDTH*3, sizeof(char));
-			log_fmt(LOG_SCN, "\n");
-		}
-	}
-	else {
-		// clear log and then log scene after init for debugging
-		log_clear(LOG_GEN);
-		for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
-			log_raw(LOG_GEN, gs->scene.tm[i], CHUNK_WIDTH*3, sizeof(char));
-			log_fmt(LOG_GEN, "\n");
-		}
-	}
 }
 
 void scn_init(GameState *gs) {
+	log_fmt(LOG_GEN, "scn_init(): Initializing scene.\n");
 	scn_load(gs, true);
 }
+
+// ------ Scene Logic ------
 
 void scn_move(GameState *gs, PlayerAction act) {
 	move_player(gs, act.move);

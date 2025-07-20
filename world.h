@@ -15,6 +15,7 @@ typedef enum {
 	CO_HALL = '#'
 } CharObject;
 
+// ------ World Structs ------
 typedef struct Room {
 	int x, y; // with respect to the sector in which the room resides
 	int width, height;
@@ -24,7 +25,7 @@ typedef struct Room {
 	int door_num;
 } Room;
 
-typedef struct {
+typedef struct Sector {
 	bool hasroom;
 	Room r;
 } Sector;
@@ -39,7 +40,6 @@ typedef struct Chunk {
 	bool initialized;
 } Chunk;
 
-/* Global state of world */
 typedef struct WorldData {
 	Chunk chunks[WORLD_HEIGHT][WORLD_WIDTH];
 	Player player;
@@ -50,12 +50,15 @@ typedef struct WorldContext {
 	void (*exit_fn)(struct WorldContext *context);
 } WorldContext;
 
+// ------ World initialization ------
 void world_init(WorldData *world);
-void world_load();
-void world_enter(void *context);
+void chunk_auto_init(GameState *gs);
 
-void world_ctx_teardown(WorldContext *context);
+// ------ Utilities ------
 Chunk *world_cnk(WorldData *world, Coord cnk);
 int chunk_random(Chunk *cnk);
 void chunk_reset_random(Chunk *cnk);
-void chunk_auto_init(GameState *gs);
+void world_ctx_teardown(WorldContext *context);
+
+// ------ Event Loop Entry ------
+void world_enter(void *context);

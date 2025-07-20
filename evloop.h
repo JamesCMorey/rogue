@@ -9,7 +9,6 @@ typedef void (*RenderFrameFn)(void *context);
 typedef LogicFrameAction (*LogicFrameFn)(void *context);
 typedef void (*PostFrameFn)(void *context);
 
-
 typedef struct LoopFrame {
 	void *ctx;
 	RenderFrameFn render;

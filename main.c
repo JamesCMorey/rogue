@@ -12,7 +12,7 @@ int main() {
 	vfx_init();
 	srand(time(NULL));
 
-	main_menu_create(NULL);
+	main_menu_enter(NULL);
 	eventloop_run();
 
 	vfx_teardown();

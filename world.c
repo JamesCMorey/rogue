@@ -15,7 +15,7 @@ static Coord cnk2idx(Coord cnk) {
 
 // ------ World initialization ------
 
-void place_door(Room *r, Direction dir) {
+static void place_door(Room *r, Direction dir) {
 	switch(dir) {
 		case UP:
 			// +1 to make sure it's not on left edge
@@ -45,7 +45,7 @@ void place_door(Room *r, Direction dir) {
 	r->valid_doors[dir] = true;
 }
 
-void place_doors(Room *r) {
+static void place_doors(Room *r) {
 	// initialize to proper values
 	r->door_num = 0;
 	for (Direction dir = 0; dir < DIR_COUNT; ++dir) {
@@ -102,6 +102,8 @@ static void chunk_init(WorldData *world, int cnk_y, int cnk_x) {
 }
 
 void world_init(WorldData *world) {
+	log_fmt(LOG_GEN, "world_init(): Initializing world.\n");
+
 	for (int y = 0; y < WORLD_HEIGHT; ++y) {
 		for (int x = 0; x < WORLD_WIDTH; ++x) {
 			world->chunks[y][x].initialized = false;
@@ -142,10 +144,6 @@ Chunk *world_cnk(WorldData *world, Coord cnk) {
 	return &world->chunks[idx.y][idx.x];
 }
 
-void chunk_reset_random(Chunk *cnk) {
-	cnk->rng_itr = 0;
-}
-
 int chunk_random(Chunk *cnk) {
 	int r;
 
@@ -164,8 +162,14 @@ int chunk_random(Chunk *cnk) {
 	return r;
 }
 
+void chunk_reset_random(Chunk *cnk) {
+	cnk->rng_itr = 0;
+}
+
 void world_ctx_teardown(WorldContext *context) {
 	WorldContext *ctx = context;
+
+	log_fmt(LOG_GEN, "world_ctx_teardown(): Leaving world loop.\n");
 
 	if (ctx && ctx->gs)
 		free(ctx->gs);
@@ -195,6 +199,8 @@ void world_exit(void *context) {
 
 void world_enter(void *context) {
 	WorldContext *ctx = context;
+
+	log_fmt(LOG_GEN, "world_enter(): Entering world loop.\n");
 
 	eventloop_enter(ctx, world_render, world_update, world_exit);
 }

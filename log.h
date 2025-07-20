@@ -12,10 +12,12 @@ typedef enum {
 	LOG_COUNT
 } LogType;
 
-void log_teardown();
-void log_init();
 
+// ------ Log Primatives ------
+void log_clear(LogType type);
 void log_raw(LogType type, char *data, size_t sz, size_t elem_sz);
 void log_fmt(LogType type, char *text, ...);
-void log_fmt_ts(LogType type, char *text, ...);
-void log_clear(LogType type);
+
+// ------ Init/Teardown ------
+void log_init();
+void log_teardown();

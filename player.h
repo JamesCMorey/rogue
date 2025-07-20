@@ -23,11 +23,14 @@ typedef struct PlayerAction {
 	Coord move;
 } PlayerAction;
 
+// ------- Action Managers ------
 PlayerAction pl_action(char c);
 void move_player(GameState *gs, Coord move);
 
+// ------ Mutators ------
 static inline void pl_set_abs(Player *pl, Coord pos) { pl->abs_pos = pos; }
 
+// ------ Accessors ------
 static inline Coord pl_cnk(Player *pl) { return abs2cnk(pl->abs_pos); }
 static inline Coord pl_abs(Player *pl) { return pl->abs_pos; }
 static inline bool pl_changed_cnk(Player *pl) { return pl->changed_cnk; }

@@ -14,6 +14,9 @@ typedef struct Scene {
 	Chunk *chunks[SCN_HEIGHT][SCN_WIDTH];                    // chunk references
 } Scene;
 
+// ------ Init/Teardown ------
 void scn_init(GameState *gs);
 void scn_load_chunk(Scene *scn, Chunk *c, int cy, int cx);
+
+// ------ Logic ------
 void scn_update(GameState *gs, PlayerAction act);

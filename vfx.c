@@ -7,7 +7,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include "vfx.h"
-#include "world.h"
 #include "evloop.h"
 
 int maxy, maxx;
@@ -16,28 +15,23 @@ typedef struct AsciiArt {
 	char *txt;
 	int height, width;
 } AsciiArt;
+
 static AsciiArt *title = NULL; /* Store ascii art of title */
 
-static void color_init() {
-	if (has_colors() == FALSE) {
-		endwin();
-		fprintf(stderr, "Your terminal does not support color.\n");
-		exit(1);
-	}
+// ------ Utilities ------
 
-	start_color();
-
-	init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
+void render_frame(LoopFrame *frame) {
+	erase();
+	frame->render(frame->ctx);
+	refresh();
 }
 
-void display_title() {
-	for (int r = 0; r < title->height; ++r) {
-		move(r, maxx/2 - (title->width/2 + 1));
-		for (int c = 0; c < title->width; ++c) {
-			addch(title->txt[r * title->width + c]);
-		}
-	}
+/* TODO maybe find a more appropriate spot for this */
+int get_input() {
+	return getch();
 }
+
+// ------ Init Helpers ------
 
 static void res_init() {
 	title = malloc(sizeof(*title));
@@ -72,48 +66,27 @@ static void res_init() {
 	fclose(fd);
 }
 
-void vfx_init() {
-	setlocale(LC_ALL, "");
-	initscr(); /* Init curses */
-	cbreak(); /* Disable buffering input */
-	noecho(); /* Disable echo */
-	keypad(stdscr, TRUE); /* Enable F1, F2, arrow keys, etc. */
-	curs_set(0); /* Hide cursor */
-	color_init();
-	res_init();
-	//attron(COLOR_PAIR(1));
+static void color_init() {
+	if (has_colors() == FALSE) {
+		endwin();
+		fprintf(stderr, "Your terminal does not support color.\n");
+		exit(1);
+	}
 
-	getmaxyx(stdscr, maxy, maxx);
+	start_color();
+
+	init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
 }
 
-void vfx_teardown() {
-	free(title);
-	endwin(); /* Teardown curses */
-}
+// ------ Display Primatives ------
 
-// void render_world() {
-// 		erase();
-//
-// 		for (int r = 0; r < 3; ++r) {
-// 			for (int c = 0; c < 3; ++c)
-// 				draw_rect(camy(20 * r), camx(40 * c), 20, 40);
-// 		}
-//
-// 		draw_rect(maxy/2, maxx/2, 1, 2);
-// 		// mvprintw(0, maxx - 10, "max y: %d", maxy);
-// 		// mvprintw(1, maxx - 10, "max x: %d", maxx);
-// 		refresh();
-// }
-
-void render_frame(LoopFrame *frame) {
-	erase();
-	frame->render(frame->ctx);
-	refresh();
-}
-
-/* TODO maybe find a more appropriate spot for this */
-int get_input() {
-	return getch();
+void display_title() {
+	for (int r = 0; r < title->height; ++r) {
+		move(r, maxx/2 - (title->width/2 + 1));
+		for (int c = 0; c < title->width; ++c) {
+			addch(title->txt[r * title->width + c]);
+		}
+	}
 }
 
 int draw_rect(int y, int x, int height, int width) {
@@ -205,4 +178,25 @@ void vfx_emphasis(bool on) {
 		return;
 	}
 	attroff(A_ITALIC | A_BOLD | A_UNDERLINE);
+}
+
+// ------ Init/Teardown ------
+
+void vfx_init() {
+	setlocale(LC_ALL, "");
+	initscr(); /* Init curses */
+	cbreak(); /* Disable buffering input */
+	noecho(); /* Disable echo */
+	keypad(stdscr, TRUE); /* Enable F1, F2, arrow keys, etc. */
+	curs_set(0); /* Hide cursor */
+	color_init();
+	res_init();
+
+	getmaxyx(stdscr, maxy, maxx);
+}
+
+void vfx_teardown() {
+	free(title->txt);
+	free(title);
+	endwin(); /* Teardown curses */
 }

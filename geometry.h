@@ -13,7 +13,7 @@
 #define SECTOR_WIDTH 60
 #define SECTOR_HEIGHT (SECTOR_WIDTH/2)
 
-// measured in sectors
+// measured in chars
 #define CHUNK_WIDTH (SECTOR_WIDTH*3)
 #define CHUNK_HEIGHT (CHUNK_WIDTH/2)
 
