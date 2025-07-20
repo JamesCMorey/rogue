@@ -1,9 +1,17 @@
 #include "menu.h"
+#include "scene.h"
 #include "vfx.h"
 #include "evloop.h"
 #include "world.h"
-#include <ncurses.h>
+#include "gamestate.h"
 #include <stdlib.h>
+
+static void main_menu_enter_world() {
+	WorldContext *ctx = malloc(sizeof(*ctx));
+	ctx->gs = gs_init();
+	ctx->exit_fn = world_ctx_teardown;
+	world_enter(ctx);
+}
 
 void main_menu_render(void *context) {
 	MenuData *ctx = context;
@@ -12,12 +20,12 @@ void main_menu_render(void *context) {
 
 	char *things[] = {"Start", "Settings", "Exit"};
 	// TODO: YIKES what is this doing here???
-	FrameSwitchFn fns[] = {enter_world, NULL, NULL}; 
+	FrameSwitchFn fns[] = {main_menu_enter_world, NULL, NULL};
 	for (int i = 0; i < 3; ++i) {
 		if (i == ctx->selected) {
-			attron(A_ITALIC | A_BOLD | A_UNDERLINE);
+			vfx_emphasis(true);
 			draw_txtbox(things[i], 12 + i*8, maxx/2 - 26, 7, 50);
-			attroff(A_ITALIC | A_BOLD | A_UNDERLINE);
+			vfx_emphasis(false);
 		} else
 			draw_txtbox(things[i], 12 + i*8, maxx/2 - 26, 7, 50);
 
@@ -58,6 +66,6 @@ void main_menu_exit(void *context) {
 void main_menu_create(void *context) {
 	MenuData *ctx = malloc(sizeof(*ctx));
 	ctx->selected = 0;
-	
+
 	eventloop_enter(ctx, main_menu_render, main_menu_logic, main_menu_exit);
 }

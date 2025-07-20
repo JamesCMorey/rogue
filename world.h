@@ -2,7 +2,10 @@
 
 #include "geometry.h"
 #include "scene.h"
+#include "player.h"
 #include <stdbool.h>
+
+typedef struct GameState GameState;
 
 typedef enum {
 	CO_EMPTY = ' ',
@@ -26,9 +29,7 @@ typedef struct {
 	Room r;
 } Sector;
 
-
 #define CNK_RNG_CNT 15
-
 typedef struct Chunk {
 	Sector sectors[3][3]; /* TODO: Make this dynamic / fit the screen */
 	int sector_door_counts[3][3];
@@ -41,18 +42,20 @@ typedef struct Chunk {
 /* Global state of world */
 typedef struct WorldData {
 	Chunk chunks[WORLD_HEIGHT][WORLD_WIDTH];
-	Coord player_coord;
+	Player player;
 } WorldData;
 
-extern WorldData world;
+typedef struct WorldContext {
+	GameState *gs;
+	void (*exit_fn)(struct WorldContext *context);
+} WorldContext;
 
+void world_init(WorldData *world);
 void world_load();
-void enter_world(void *context);
+void world_enter(void *context);
 
-static inline Coord cnk2idx(Coord cnk) {
-	return coord(cnk.y + WORLD_HEIGHT/2, cnk.x + WORLD_WIDTH/2);
-}
-
-Chunk *world_get_cnk(Coord cnk);
+void world_ctx_teardown(WorldContext *context);
+Chunk *world_cnk(WorldData *world, Coord cnk);
 int chunk_random(Chunk *cnk);
 void chunk_reset_random(Chunk *cnk);
+void chunk_auto_init(GameState *gs);

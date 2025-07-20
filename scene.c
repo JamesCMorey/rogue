@@ -3,13 +3,12 @@
 #include "world.h"
 #include "log.h"
 #include "player.h"
+#include "gamestate.h"
 #include <string.h>
 #include <stdlib.h>
 
-Scene scn;
-
-Sector *scn_sector(Coord cnk, Coord sec) {
-	return &scn.chunks[cnk.y][cnk.x]->sectors[sec.y][sec.x];
+Sector *scn_sector(Scene *scn, Coord cnk, Coord sec) {
+	return &scn->chunks[cnk.y][cnk.x]->sectors[sec.y][sec.x];
 }
 
 Coord scn_point(Coord cnk, Coord sec, Coord pnt) {
@@ -18,8 +17,8 @@ Coord scn_point(Coord cnk, Coord sec, Coord pnt) {
 	                 pnt));
 }
 
-Coord scn_door_coord(Coord cnk, Coord sec, Direction dir) {
-	Sector *s = scn_sector(cnk, sec);
+Coord scn_door_coord(Scene *scn, Coord cnk, Coord sec, Direction dir) {
+	Sector *s = scn_sector(scn, cnk, sec);
 
 	// find the scn coords for the pnt of the door pnt coords = (room  + door)
 	Coord pnt = scn_point(cnk, sec, coord_add(coord(s->r.y, s->r.x), s->r.doors[dir]));
@@ -44,16 +43,16 @@ Coord scn_door_coord(Coord cnk, Coord sec, Direction dir) {
 	return pnt;
 }
 
-char *tile_at(Coord c) {
-	return &scn.tm[c.y][c.x];
+char *tile_at(Scene *scn, Coord c) {
+	return &scn->tm[c.y][c.x];
 }
 
 bool tile_clear(char *t) {
 	return *t == CO_EMPTY || *t == CO_HALL;
 }
 
-Direction random_door(Coord cnk, Room *r) {
-	int rand = chunk_random(scn.chunks[cnk.y][cnk.x]);
+Direction random_door(Scene *scn, Coord cnk, Room *r) {
+	int rand = chunk_random(scn->chunks[cnk.y][cnk.x]);
 	int door_chosen = (rand%r->door_num) + 1; // +1 so it's 1-4 and not 0-3
 
 	int doors_seen = 0;
@@ -75,12 +74,12 @@ Direction random_door(Coord cnk, Room *r) {
  *  cnk1, cnk2: coords of each chunk in scn
  *	s1, s2: coords of sector within their respective chunk
  * */
-void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
-	Sector *s = scn_sector(cnk1, s1);
-	Coord cur = scn_door_coord(cnk1, s1, random_door(cnk1, &s->r));
+void join_sectors(Scene *scn, Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
+	Sector *s = scn_sector(scn, cnk1, s1);
+	Coord cur = scn_door_coord(scn, cnk1, s1, random_door(scn, cnk1, &s->r));
 
-	s = scn_sector(cnk2, s2);
-	Coord tar = scn_door_coord(cnk2, s2, random_door(cnk2, &s->r));
+	s = scn_sector(scn, cnk2, s2);
+	Coord tar = scn_door_coord(scn, cnk2, s2, random_door(scn, cnk2, &s->r));
 
 	// Compute the distance of the y- and x-components between the doors
 	int diff[2] = {coord_sub(tar, cur).y, coord_sub(tar, cur).x};
@@ -95,8 +94,8 @@ void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
 		 * The equation subtracts movement made along the axis so that the direction
 		 * is relative to the current position and not a set point.
 		 * */
-		int r1 = chunk_random(scn.chunks[cnk1.y][cnk1.x])%2 ? -1 : 1;
-		int r2 = chunk_random(scn.chunks[cnk2.y][cnk2.x])%2 ? -1 : 1;
+		int r1 = chunk_random(scn->chunks[cnk1.y][cnk1.x])%2 ? -1 : 1;
+		int r2 = chunk_random(scn->chunks[cnk2.y][cnk2.x])%2 ? -1 : 1;
 		int dir[2] = {
 			diff[0] == mvd[0] ? r1 : (diff[0] - mvd[0]) / abs(diff[0] - mvd[0]),
 			diff[1] == mvd[1] ? r2 : (diff[1] - mvd[1]) / abs(diff[1] - mvd[1])
@@ -108,7 +107,7 @@ void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
 			coord_add(cur, coord(0, dir[1]))
 		};
 
-		char *tile[2] = { tile_at(next[0]), tile_at(next[1]) };
+		char *tile[2] = { tile_at(scn, next[0]), tile_at(scn, next[1]) };
 
 		/* Try to move in current priority axis under the following conditions:
 		 * 1. the target hasn't been reached yet
@@ -129,13 +128,13 @@ void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
 				tmp[0] = 0; tmp[1] = 0;
 				tmp[prio] = dir[prio];
 				next[prio] = coord_add(cur, coord(tmp[0], tmp[1]));
-				tile[prio] = tile_at(next[prio]);
+				tile[prio] = tile_at(scn, next[prio]);
 
 				// prepare for escape condition (target reached or other axis is free)
 				tmp[0] = 0; tmp[1] = 0;
 				tmp[!prio] = dir[!prio];
 			} while (!(mvd[prio] == diff[prio] && mvd[!prio] == diff[!prio])
-			          && !tile_clear(tile_at(coord_add(cur, coord(tmp[0], tmp[1])))));
+			          && !tile_clear(tile_at(scn, coord_add(cur, coord(tmp[0], tmp[1])))));
 		}
 
 		// alternate axis
@@ -149,17 +148,17 @@ void join_sectors(Coord cnk1, Coord s1, Coord cnk2, Coord s2) {
  * 2. Make pathing more sane
  * 3. Make all doors get used instead of random selection
  * */
-void gen_halls(int cy, int cx) {
+void gen_halls(Scene *scn, int cy, int cx) {
 	/* reset rng array of both chunk to start of array so each time this function
 	 * is called, it creates the same 'random' output.
 	 * */
-	chunk_reset_random(scn.chunks[cy][cx]);
+	chunk_reset_random(scn->chunks[cy][cx]);
 
 	// modifiable copy
 	int tmp_cnt[3][3];
 	for (int y = 0; y < 3; ++y) {
 		for(int x = 0; x < 3; ++x) {
-			tmp_cnt[y][x] = scn.chunks[cy][cx]->sector_door_counts[y][x];
+			tmp_cnt[y][x] = scn->chunks[cy][cx]->sector_door_counts[y][x];
 		}
 	}
 
@@ -171,7 +170,7 @@ void gen_halls(int cy, int cx) {
 
 				int ry, rx;
 				ry = rx = 0;
-				int rand = chunk_random(scn.chunks[cy][cx]);
+				int rand = chunk_random(scn->chunks[cy][cx]);
 				if (y == 2 && x == 2) {
 					rx = rand%3;
 					ry = rand%3;
@@ -184,13 +183,13 @@ void gen_halls(int cy, int cx) {
 				int abort = 0;
 				while (abort < 10 && ((rx == x && ry == y)
 				       || (tmp_cnt[ry][rx] == 0 && !(y == 2 && x == 2)))) {
-					rand = chunk_random(scn.chunks[cy][cx]);
+					rand = chunk_random(scn->chunks[cy][cx]);
 					rx = rand%(3-x) + x;
 					ry = rand%(3-y) + y;
 					++abort; // prevent infinite loop
 				}
 
-				join_sectors(coord(cy, cx), coord(y, x), coord(cy, cx), coord(ry, rx));
+				join_sectors(scn, coord(cy, cx), coord(y, x), coord(cy, cx), coord(ry, rx));
 				--tmp_cnt[y][x];
 				--tmp_cnt[ry][rx];
 			}
@@ -208,8 +207,8 @@ void gen_halls(int cy, int cx) {
  * room before rendering its walls and doors into the scn.tm tilemap.
  * (The responsibilities of this function may expand in the future)
  * */
-void scn_load_sector(Coord cnk, Coord sec) {
-	Sector *s = scn_sector(cnk, sec);
+void scn_load_sector(Scene *scn, Coord cnk, Coord sec) {
+	Sector *s = scn_sector(scn, cnk, sec);
 
 	// Top-left corner of room in tilemap
 	Coord r = coord_add(chunk_offset(cnk.y, cnk.x),
@@ -219,14 +218,14 @@ void scn_load_sector(Coord cnk, Coord sec) {
 	// Draw horizontal walls (top and bottom)
   // see draw_rect() for -1 explanation
 	for (int x = 0; x < s->r.width; ++x) {
-		scn.tm[r.y][r.x + x] = CO_WALL;                      // top
-		scn.tm[r.y + s->r.height - 1][r.x + x] = CO_WALL;    // bottom
+		scn->tm[r.y][r.x + x] = CO_WALL;                      // top
+		scn->tm[r.y + s->r.height - 1][r.x + x] = CO_WALL;    // bottom
 	}
 
 	// Draw vertical walls (left and right)
 	for (int y = 0; y < s->r.height; ++y) {
-		scn.tm[r.y + y][r.x] = CO_WALL;                      // left
-		scn.tm[r.y + y][r.x + s->r.width - 1] = CO_WALL;     // right
+		scn->tm[r.y + y][r.x] = CO_WALL;                      // left
+		scn->tm[r.y + y][r.x + s->r.width - 1] = CO_WALL;     // right
 	}
 
 	// Place doors on walls
@@ -238,51 +237,52 @@ void scn_load_sector(Coord cnk, Coord sec) {
 
 		// Horizontal doors: 0 (up) and 2 (down)
 		if (k % 2 == 0) {
-			scn.tm[d.y][d.x] =
-			scn.tm[d.y][d.x + 1] =
-			scn.tm[d.y][d.x + 2] = CO_CLOSED_DOOR;
+			scn->tm[d.y][d.x] =
+			scn->tm[d.y][d.x + 1] =
+			scn->tm[d.y][d.x + 2] = CO_CLOSED_DOOR;
 		}
 		// Vertical doors: 1 (right) and 3 (left)
 		else {
-			scn.tm[d.y][d.x] =
-			scn.tm[d.y + 1][d.x] = CO_CLOSED_DOOR;
+			scn->tm[d.y][d.x] =
+			scn->tm[d.y + 1][d.x] = CO_CLOSED_DOOR;
 		}
 	}
 }
 
 /* cy and cx are indexes into the chunk references */
-void scn_load_chunk(Chunk *c, int cy, int cx) {
+void scn_load_chunk(Scene *scn, Chunk *c, int cy, int cx) {
 	// store reference
-	scn.chunks[cy][cx] = c;
+	scn->chunks[cy][cx] = c;
 
 	// Clear chunk area in tilemap before drawing the chunk in it
 	for (int y = 0; y < CHUNK_HEIGHT; ++y) {
-		memset(&scn.tm[cy*CHUNK_HEIGHT + y][cx*CHUNK_WIDTH], CO_EMPTY, CHUNK_WIDTH);
+		memset(&scn->tm[cy*CHUNK_HEIGHT + y][cx*CHUNK_WIDTH], CO_EMPTY, CHUNK_WIDTH);
 	}
 
 	// Load sectors of chunk into tilemap
 	for (int sy = 0; sy < 3; ++sy) {
 		for (int sx = 0; sx < 3; ++sx) {
-			scn_load_sector(coord(cy, cx),
+			scn_load_sector(scn,
+			                coord(cy, cx),
 			                coord(sy, sx));
 		}
 	}
 
 	// Draw halls in tilemap
-	gen_halls(cy, cx);
+	gen_halls(scn, cy, cx);
 }
 
-void scn_load(bool force_load) {
-	if (!pl_get_changed_cnk() && !force_load)
+void scn_load(GameState *gs, bool force_load) {
+	if (!pl_changed_cnk(&gs->player) && !force_load)
 		return;
 
 	// TODO: Fix OOB access that loops like this could cause
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
 			// load player and surrounding chunks
-			Coord idx = cnk2idx(coord_add(pl_get_cnk(), coord(y, x)));
-			Chunk *c = &world.chunks[idx.y][idx.x];
-			scn_load_chunk(c, y + 1, x + 1); // offset to stay in bounds of array
+			Coord cnk = coord_add(pl_cnk(&gs->player), coord(y, x));
+			Chunk *c = world_cnk(&gs->dungeon, cnk);
+			scn_load_chunk(&gs->scene, c, y + 1, x + 1); // offset to stay in bounds of array
 		}
 	}
 
@@ -290,7 +290,7 @@ void scn_load(bool force_load) {
 		// clear log and then log scene after init for debugging
 		log_clear(LOG_SCN);
 		for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
-			log_raw(LOG_SCN, scn.tm[i], CHUNK_WIDTH*3, sizeof(char));
+			log_raw(LOG_SCN, gs->scene.tm[i], CHUNK_WIDTH*3, sizeof(char));
 			log_fmt(LOG_SCN, "\n");
 		}
 	}
@@ -298,20 +298,26 @@ void scn_load(bool force_load) {
 		// clear log and then log scene after init for debugging
 		log_clear(LOG_GEN);
 		for (int i = 0; i < CHUNK_HEIGHT*3; ++i) {
-			log_raw(LOG_GEN, scn.tm[i], CHUNK_WIDTH*3, sizeof(char));
+			log_raw(LOG_GEN, gs->scene.tm[i], CHUNK_WIDTH*3, sizeof(char));
 			log_fmt(LOG_GEN, "\n");
 		}
 	}
 }
 
-void scn_init() {
-	scn_load(true);
+void scn_init(GameState *gs) {
+	scn_load(gs, true);
 }
 
-void scn_update(PlayerAction act) {
+void scn_move(GameState *gs, PlayerAction act) {
+	move_player(gs, act.move);
+	scn_load(gs, false);
+	chunk_auto_init(gs);
+}
+
+void scn_update(GameState *gs, PlayerAction act) {
 	switch (act.type) {
-		case PL_MOVE:
-			scn_load(false);
+		case PA_MOVE:
+			scn_move(gs, act);
 			break;
 		default:
 			break;

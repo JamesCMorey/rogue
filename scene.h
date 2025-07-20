@@ -1,16 +1,19 @@
 #pragma once
 
 #include "geometry.h"
-#include "player.h"
+
+#define SCN_HEIGHT 3
+#define SCN_WIDTH 3
 
 typedef struct Chunk Chunk;
+typedef struct PlayerAction PlayerAction;
+typedef struct GameState GameState;
 
 typedef struct Scene {
-	char tm[CHUNK_HEIGHT*3][CHUNK_WIDTH*3]; // active tilemap
-	Chunk *chunks[3][3];                    // chunk references
-	Coord chunk_center;                     // chunk coord of center chunk
+	char tm[CHUNK_HEIGHT*SCN_HEIGHT][CHUNK_WIDTH*SCN_WIDTH]; // active tilemap
+	Chunk *chunks[SCN_HEIGHT][SCN_WIDTH];                    // chunk references
 } Scene;
 
-void scn_init();
-void scn_load_chunk(Chunk *c, int cy, int cx);
-void scn_update(PlayerAction act);
+void scn_init(GameState *gs);
+void scn_load_chunk(Scene *scn, Chunk *c, int cy, int cx);
+void scn_update(GameState *gs, PlayerAction act);

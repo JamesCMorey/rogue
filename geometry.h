@@ -47,6 +47,10 @@ static inline Coord coord_sub(Coord a, Coord b) {
 	return coord(a.y - b.y, a.x - b.x);
 }
 
+static inline bool coord_eq(Coord a, Coord b) {
+	return a.y == b.y && a.x == b.x;
+}
+
 /* Assume that tl is the top left (min y/x) and br is bottom right (max y/x) */
 static inline bool coord_inside(Coord a, Coord tl, Coord br) {
 	return (tl.y <= a.y && a.y < br.y) && (tl.x <= a.x && a.x <= br.x);

@@ -1,12 +1,14 @@
-#include "vfx.h"
-#include "world.h"
-#include "evloop.h"
+#include <curses.h>
 #include <locale.h>
 #include <ncursesw/ncurses.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+#include "vfx.h"
+#include "world.h"
+#include "evloop.h"
 
 int maxy, maxx;
 
@@ -119,19 +121,19 @@ int draw_rect(int y, int x, int height, int width) {
 	 * br = bottom right tl = top left
 	 *
 	 * br and tl need -1 due to the following (borders included in dimensions):
-	 * 
+	 *
 	 * Imagine there was no -1 and we had a rect (2, 2) with a width 5.
-	 * 
-	 * tl would be (2,2), which requires no alteration as we will assume the 
+	 *
+	 * tl would be (2,2), which requires no alteration as we will assume the
 	 * user knows the grid starts at (0,0) and that (2,2) starts 3 cells out.
 	 * br would be (2, 7)
-	 * 
+	 *
 	 * So, the leftmost wall would be drawn down from (2,2), which would be the
 	 * 3rd column visually. The rightmost wall would be drawn down from (2, 7),
 	 * which is the 8th column visually. This sounds fine till you realize that
-	 * means the 3rd and 8th columns are the _borders_ of the rect, meaning 
-	 * columns 4 through 7 are contained within the rect (4 columns) and the 3rd 
-	 * and 8th columns are used as the edges (2 columns), ultimately resulting in 
+	 * means the 3rd and 8th columns are the _borders_ of the rect, meaning
+	 * columns 4 through 7 are contained within the rect (4 columns) and the 3rd
+	 * and 8th columns are used as the edges (2 columns), ultimately resulting in
 	 * a rect of width 6.
 	 *
 	 * The same situation occurs with height as well.
@@ -187,3 +189,20 @@ void draw_txtbox(char *txt, int y, int x, int height, int width) {
 	draw_rect(y, x, height, width);
 }
 
+void vfx_printf(int y, int x, char *str, ...) {
+	va_list args;
+
+	move(y, x);
+
+	va_start(args, str);
+	vw_printw(stdscr, str, args);
+	va_end(args);
+}
+
+void vfx_emphasis(bool on) {
+	if (on) {
+		attron(A_ITALIC | A_BOLD | A_UNDERLINE);
+		return;
+	}
+	attroff(A_ITALIC | A_BOLD | A_UNDERLINE);
+}

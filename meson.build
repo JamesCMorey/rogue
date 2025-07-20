@@ -10,5 +10,6 @@ executable('rogue',
   'scene.c',
   'scene_render.c',
   'player.c',
+  'gamestate.c',
   dependencies : [dependency('ncursesw')]
 )
