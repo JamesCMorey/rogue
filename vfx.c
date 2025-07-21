@@ -26,10 +26,8 @@ void render_frame(LoopFrame *frame) {
 	refresh();
 }
 
-/* TODO maybe find a more appropriate spot for this */
-int get_input() {
-	return getch();
-}
+// Input wrapper for complete encapsulation of ncurses API
+int get_input() { return getch(); }
 
 // ------ Init Helpers ------
 
