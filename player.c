@@ -9,6 +9,8 @@ void move_player(GameState *gs, Coord move) {
 	Coord new_cnk = abs2cnk(new_abs);
 	if (!coord_eq(old_cnk, new_cnk))
 		gs->player.changed_cnk = true;
+	else
+	 gs->player.changed_cnk = false;
 
 	pl_set_abs(&gs->player, new_abs);
 }

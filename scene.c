@@ -299,8 +299,11 @@ void scn_init(GameState *gs) {
 
 void scn_move(GameState *gs, PlayerAction act) {
 	move_player(gs, act.move);
-	scn_load(gs, false);
-	chunk_auto_init(gs);
+
+	if (pl_changed_cnk(&gs->player)) {
+		chunk_init_around(&gs->dungeon, pl_cnk(&gs->player));
+		scn_load(gs, false);
+	}
 }
 
 void scn_update(GameState *gs, PlayerAction act) {

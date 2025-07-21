@@ -52,10 +52,11 @@ typedef struct WorldContext {
 
 // ------ World initialization ------
 void world_init(WorldData *world);
-void chunk_auto_init(GameState *gs);
+void chunk_init_around(WorldData *world, Coord cnk);
 
 // ------ Utilities ------
 Chunk *world_cnk(WorldData *world, Coord cnk);
+bool world_coord_valid(WorldData *world, Coord cnk);
 int chunk_random(Chunk *cnk);
 void chunk_reset_random(Chunk *cnk);
 void world_ctx_teardown(WorldContext *context);

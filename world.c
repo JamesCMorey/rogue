@@ -5,7 +5,6 @@
 #include "geometry.h"
 #include "scene.h"
 #include "player.h"
-#include "gamestate.h"
 #include "scene_render.h"
 #include <stdlib.h>
 
@@ -85,9 +84,8 @@ static void sector_init(Sector *s) {
 	place_doors(r);
 }
 
-static void chunk_init(WorldData *world, int cnk_y, int cnk_x) {
-	Coord idx = cnk2idx(coord(cnk_y, cnk_x));
-	Chunk *cnk = &world->chunks[idx.y][idx.x];
+static void chunk_init(WorldData *world, Coord cnk_coord) {
+	Chunk *cnk = world_cnk(world, cnk_coord);
 
 	for (int y = 0; y < 3; ++y) {
 		for (int x = 0; x < 3; ++x) {
@@ -113,26 +111,21 @@ void world_init(WorldData *world) {
 	/* Generate rooms */
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
-			chunk_init(world, y, x);
+			world_coord_valid(world, coord(y, x));
+			chunk_init(world, coord(y, x));
 		}
 	}
 }
 
-void chunk_auto_init(GameState *gs) {
-	WorldData *world = &gs->dungeon;
-	if (!pl_changed_cnk(&gs->player))
-		return;
-
+void chunk_init_around(WorldData *world, Coord cnk) {
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
-			// TODO: Fix the chunk coord and chunk array coord disconnect/confusion
-			Coord cnk = coord_add(pl_cnk(&gs->player), coord(y, x));
-			Coord idx = cnk2idx(cnk);
-
-			if (world->chunks[idx.y][idx.x].initialized)
-				continue;
-
-			chunk_init(world, cnk.y, cnk.x);
+			Coord tmp = coord_add(cnk, coord(y, x));
+			if ((y != 0 || x != 0)                         // not current chunk
+				   && world_coord_valid(world, tmp)          // valid coord
+				   && !world_cnk(world, tmp)->initialized) { // not init already
+				chunk_init(world, tmp);
+			}
 		}
 	}
 }
@@ -142,6 +135,13 @@ void chunk_auto_init(GameState *gs) {
 Chunk *world_cnk(WorldData *world, Coord cnk) {
 	Coord idx = cnk2idx(cnk);
 	return &world->chunks[idx.y][idx.x];
+}
+
+// takes WorldData because dimensions may be stored in world later on
+bool world_coord_valid(WorldData *world, Coord cnk) {
+	return coord_inside(cnk2idx(cnk),
+	                    coord(0, 0),
+	                    coord(WORLD_HEIGHT, WORLD_WIDTH));
 }
 
 int chunk_random(Chunk *cnk) {
