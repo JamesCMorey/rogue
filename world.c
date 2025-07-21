@@ -7,6 +7,7 @@
 #include "player.h"
 #include "scene_render.h"
 #include <stdlib.h>
+#include <assert.h>
 
 static Coord cnk2idx(Coord cnk) {
 	return coord(cnk.y + WORLD_HEIGHT/2, cnk.x + WORLD_WIDTH/2);
@@ -85,8 +86,9 @@ static void sector_init(Sector *s) {
 }
 
 static void chunk_init(WorldData *world, Coord cnk_coord) {
-	Chunk *cnk = world_cnk(world, cnk_coord);
+	assert(world_coord_valid(world, cnk_coord));
 
+	Chunk *cnk = world_cnk(world, cnk_coord);
 	for (int y = 0; y < 3; ++y) {
 		for (int x = 0; x < 3; ++x) {
 			sector_init(&cnk->sectors[y][x]);
@@ -133,6 +135,8 @@ void chunk_init_around(WorldData *world, Coord cnk) {
 // ------ Utilities ------
 
 Chunk *world_cnk(WorldData *world, Coord cnk) {
+	assert(world_coord_valid(world, cnk));
+
 	Coord idx = cnk2idx(cnk);
 	return &world->chunks[idx.y][idx.x];
 }

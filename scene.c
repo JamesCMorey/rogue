@@ -275,24 +275,22 @@ void scn_load_chunk(Scene *scn, Chunk *c, int cy, int cx) {
 	gen_halls(scn, cy, cx);
 }
 
-void scn_load(GameState *gs, bool force_load) {
-	if (!pl_changed_cnk(&gs->player) && !force_load)
-		return;
-
-	// TODO: Fix OOB access that loops like this could cause
+void scn_load(GameState *gs) {
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
 			// load player and surrounding chunks
 			Coord cnk = coord_add(pl_cnk(&gs->player), coord(y, x));
-			Chunk *c = world_cnk(&gs->dungeon, cnk);
-			scn_load_chunk(&gs->scene, c, y + 1, x + 1); // offset to stay in bounds of array
+			if (world_coord_valid(&gs->dungeon, cnk)) {
+				Chunk *c = world_cnk(&gs->dungeon, cnk);
+				scn_load_chunk(&gs->scene, c, y + 1, x + 1);
+			}
 		}
 	}
 }
 
 void scn_init(GameState *gs) {
 	log_fmt(LOG_GEN, "scn_init(): Initializing scene.\n");
-	scn_load(gs, true);
+	scn_load(gs);
 }
 
 // ------ Scene Logic ------
@@ -301,8 +299,9 @@ void scn_move(GameState *gs, PlayerAction act) {
 	move_player(gs, act.move);
 
 	if (pl_changed_cnk(&gs->player)) {
+		// Initialize new chunks and load them into scn
 		chunk_init_around(&gs->dungeon, pl_cnk(&gs->player));
-		scn_load(gs, false);
+		scn_load(gs);
 	}
 }
 
