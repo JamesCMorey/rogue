@@ -51,7 +51,6 @@ void render_chunk(GameState *gs, int cy, int cx) {
 
 // ------ Scene Rendering ------
 
-// TODO: Fix hall flickering when crossing cnk borders for cnks with coords >0
 void render_halls(GameState *gs) {
 	Coord scn_center = coord(CHUNK_HEIGHT*SCN_HEIGHT/2, CHUNK_WIDTH*SCN_WIDTH/2);
 	Coord scn_center_tl = coord_sub(scn_center, coord(CHUNK_HEIGHT/2, CHUNK_WIDTH/2));

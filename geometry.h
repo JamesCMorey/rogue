@@ -75,9 +75,11 @@ static inline Coord sector_offset(int sy, int sx) {
  * ...
  * */
 static inline Coord abs2cnk(Coord pnt) {
+	// +1 because it takes -46 steps to move out of chunk backwards but only
+	// 45 forwards
 	return coord(
-		(pnt.y > 0 ? pnt.y+(CHUNK_HEIGHT/2) : pnt.y-(CHUNK_HEIGHT/2))/CHUNK_HEIGHT,
-		(pnt.x > 0 ? pnt.x+(CHUNK_WIDTH/2) : pnt.x-(CHUNK_WIDTH/2))/CHUNK_WIDTH
+		(pnt.y > 0 ? pnt.y+(CHUNK_HEIGHT/2) : (pnt.y+1)-(CHUNK_HEIGHT/2))/CHUNK_HEIGHT,
+		(pnt.x > 0 ? pnt.x+(CHUNK_WIDTH/2) : (pnt.x+1)-(CHUNK_WIDTH/2))/CHUNK_WIDTH
 	);
 }
 
