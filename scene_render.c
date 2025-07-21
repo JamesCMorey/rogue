@@ -1,4 +1,5 @@
 #include "scene_render.h"
+#include "geometry.h"
 #include "scene.h"
 #include "world.h"
 #include "player.h"
@@ -50,7 +51,26 @@ void render_chunk(GameState *gs, int cy, int cx) {
 
 // ------ Scene Rendering ------
 
-void render_chunkmap(GameState *gs) { // TODO: Make this actually draw a chunkmap
+// TODO: Fix hall flickering when crossing cnk borders for cnks with coords >0
+void render_halls(GameState *gs) {
+	Coord scn_center = coord(CHUNK_HEIGHT*SCN_HEIGHT/2, CHUNK_WIDTH*SCN_WIDTH/2);
+	Coord scn_center_tl = coord_sub(scn_center, coord(CHUNK_HEIGHT/2, CHUNK_WIDTH/2));
+
+	Coord tm_pl_pos = coord_add(scn_center_tl, scn_pl_pos(&gs->scene));
+	Coord view_tl = coord_sub(tm_pl_pos, coord(maxy/2, maxx/2));
+
+	for (int y = 0; y < maxy; ++y) {
+		for (int x = 0; x < maxx; ++x) {
+			Coord tmp = coord_add(view_tl, coord(y, x));
+			if (*tile_at(&gs->scene, tmp)  == '#')
+				vfx_printf(y, x, "#");
+
+		}
+	}
+}
+
+// TODO: Make this actually draw a chunkmap
+void render_chunkmap(GameState *gs) {
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
 			Coord tl = world_offset(coord(y, x), coord(0, 0), coord(0, 0));
@@ -64,6 +84,7 @@ void world_render(void *context) {
 	WorldContext *ctx = context;
 	GameState *gs = ctx->gs;
 
+	// Rooms
 	for (int y = -1; y < 2; ++y) {
 		for (int x = -1; x < 2; ++x) {
 			Coord pos = abs2cnk(pl_abs(&gs->player));
@@ -71,13 +92,18 @@ void world_render(void *context) {
 		}
 	}
 
-	render_chunkmap(gs);
-	draw_rect(maxy/2, maxx/2, 2, 3); // visual square; logical nightmare
+	// Halls between rooms
+	render_halls(gs);
+
+	// Info
 	Coord p = pl_abs(&gs->player);
 	vfx_printf(maxy - 1, 0, "y:%d, x:%d", p.y, p.x);
-}
 
-void scn_render() {
-	// maxx/2, maxy/2
-	// abs ->
+	p = scn_pl_pos(&gs->scene);
+	vfx_printf(maxy - 2, 0, "ypp:%d, xpp:%d", p.y, p.x);
+
+	render_chunkmap(gs);
+
+	// Player: visual square; logical nightmare.
+	draw_rect(maxy/2, maxx/2, 2, 3);
 }

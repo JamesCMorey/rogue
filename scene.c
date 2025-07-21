@@ -9,7 +9,6 @@
 
 // ------ Tile Utilities ------
 
-static char *tile_at(Scene *scn, Coord c) { return &scn->tm[c.y][c.x]; }
 static bool tile_clear(char *t) { return *t == CO_EMPTY || *t == CO_HALL; }
 
 // ------  Sector/Room Access ------
@@ -291,12 +290,36 @@ void scn_load(GameState *gs) {
 void scn_init(GameState *gs) {
 	log_fmt(LOG_GEN, "scn_init(): Initializing scene.\n");
 	scn_load(gs);
+
+	// Player starts in the middle of a sector
+	gs->scene.player_coord = coord(CHUNK_HEIGHT/2, CHUNK_WIDTH/2);
 }
 
 // ------ Scene Logic ------
 
+void scn_update_pl_pos(Scene *scn, Coord move) {
+	scn->player_coord = coord_add(scn->player_coord, move);
+
+	// Wrap y coord at borders of chunk
+	if (scn->player_coord.y + move.y == CHUNK_HEIGHT + 1) {
+		scn->player_coord.y = 0;
+	}
+	else if (scn->player_coord.y + move.y == -2) {
+		scn->player_coord.y = CHUNK_HEIGHT - 1;
+	}
+
+	// Wrap x coord at borders of chunk
+	if (scn->player_coord.x + move.x == CHUNK_WIDTH + 1) {
+		scn->player_coord.x = 0;
+	}
+	else if (scn->player_coord.x + move.x == -2) {
+		scn->player_coord.x = CHUNK_WIDTH - 1;
+	}
+}
+
 void scn_move(GameState *gs, PlayerAction act) {
 	move_player(gs, act.move);
+	scn_update_pl_pos(&gs->scene, act.move);
 
 	if (pl_changed_cnk(&gs->player)) {
 		// Initialize new chunks and load them into scn
